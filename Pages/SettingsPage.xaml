@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Vista comentada: Vista de ajustes de cuenta. -->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MiniTFG.SettingsPage"
+             Title="SettingsPage">
+    <VerticalStackLayout>
+        <Button Text="Cambiar nombre de usuario"
+                BackgroundColor="#9C40F7"
+                TextColor="White"
+                CornerRadius="15"
+                HeightRequest="50"
+                Clicked="CambiarUsernameClicked" />
+        
+        <Button Text="Cambiar email"
+                BackgroundColor="#9C40F7"
+                TextColor="White"
+                CornerRadius="15"
+                HeightRequest="50"
+                Clicked="CambiarEmailClicked" />
+        
+        <Button Text="Cambiar contraseña"
+                BackgroundColor="#9C40F7"
+                TextColor="White"
+                CornerRadius="15"
+                HeightRequest="50"
+                Clicked="CambiarPasswordClicked" />
+        
+        <Button Text="Cambiar preferencias"
+                BackgroundColor="#9C40F7"
+                TextColor="White"
+                CornerRadius="15"
+                HeightRequest="50"
+                Clicked="CambiarPreferenciasClicked" />
+        
+        <Button Text="Cerrar sesión"
+                BackgroundColor="#9C40F7"
+                TextColor="White"
+                CornerRadius="15"
+                HeightRequest="50"
+                Clicked="CerrarSesionClicked" />
+    </VerticalStackLayout>
+</ContentPage>

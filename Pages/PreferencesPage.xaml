@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Vista comentada: Vista de selección de preferencias alimentarias. -->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MiniTFG.PreferencesPage">
+    <VerticalStackLayout Spacing="20" Padding="30">
+        <Label 
+            Text="Selecciona tus preferencias:"
+            FontSize="28"
+            FontAttributes="Bold"
+            VerticalOptions="Center" 
+            HorizontalOptions="Center" />
+
+        <CollectionView ItemsSource="{Binding Preferencias}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <HorizontalStackLayout Spacing="10" Padding="10">
+                        <CheckBox IsChecked="{Binding Seleccion}" VerticalOptions="Center" />
+                        <Label Text="{Binding Nombre}" FontSize="18" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Button
+            Text="Crear perfil"
+            x:Name="btnFinish"
+            Clicked="FinishClicked"
+            HeightRequest="50"
+            CornerRadius="0"
+            BackgroundColor="#9C40F7"
+            VerticalOptions="Center"
+            HorizontalOptions="Fill" />
+    </VerticalStackLayout>
+</ContentPage>

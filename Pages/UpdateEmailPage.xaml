@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Vista comentada: Vista para cambiar correo. -->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MiniTFG.UpdateEmailPage"
+             Title="UpdateEmailPage">
+    <VerticalStackLayout>
+        <Entry x:Name="EmailEntry"
+               Placeholder="Nuevo email"
+               FontSize="18" />
+
+        <Button Text="Actualizar email"
+                BackgroundColor="#9C40F7"
+                TextColor="White"
+                CornerRadius="15"
+                HeightRequest="50"
+                Clicked="GuardarEmailClicked" />
+    </VerticalStackLayout>
+</ContentPage>

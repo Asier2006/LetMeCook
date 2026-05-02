@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Vista comentada: Popup de valoración por estrellas. -->
+<toolkit:Popup
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    x:Class="MiniTFG.StarRatingPopup">
+
+    <VerticalStackLayout Padding="20" Spacing="20" BackgroundColor="#9C40F7"
+                         HorizontalOptions="Center" VerticalOptions="Center">
+
+        <Label Text="Valora al usuario" FontSize="20" HorizontalOptions="Center" TextColor="White"/>
+
+        <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+
+            <ImageButton
+                x:Name="Star1"
+                Source="star.png"
+                WidthRequest="40"
+                HeightRequest="40"
+                BackgroundColor="Transparent"
+                Padding="0"
+                CommandParameter="1"
+                Clicked="StarClicked" />
+
+            <ImageButton
+                x:Name="Star2"
+                Source="star.png"
+                WidthRequest="40"
+                HeightRequest="40"
+                BackgroundColor="Transparent"
+                Padding="0"
+                CommandParameter="2"
+                Clicked="StarClicked" />
+
+            <ImageButton
+                x:Name="Star3"
+                Source="star.png"
+                WidthRequest="40"
+                HeightRequest="40"
+                BackgroundColor="Transparent"
+                Padding="0"
+                CommandParameter="3"
+                Clicked="StarClicked" />
+
+            <ImageButton
+                x:Name="Star4"
+                Source="star.png"
+                WidthRequest="40"
+                HeightRequest="40"
+                BackgroundColor="Transparent"
+                Padding="0"
+                CommandParameter="4"
+                Clicked="StarClicked" />
+
+            <ImageButton
+                x:Name="Star5"
+                Source="star.png"
+                WidthRequest="40"
+                HeightRequest="40"
+                BackgroundColor="Transparent"
+                Padding="0"
+                CommandParameter="5"
+                Clicked="StarClicked" />
+
+
+        </HorizontalStackLayout>
+        <Label
+            x:Name="MensajeLabel"
+            Text="Selecciona una puntuación."
+            FontSize="13"
+            TextColor="#D8C7E8"
+            HorizontalOptions="Center" />
+
+        <Button
+            x:Name="GuardarButton"
+            Text="Guardar valoración"
+            HeightRequest="42"
+            CornerRadius="10"
+            FontAttributes="Bold"
+            BackgroundColor="#9C40F7"
+            TextColor="White"
+            Clicked ="GuardarClicked" />
+
+    </VerticalStackLayout>
+</toolkit:Popup>

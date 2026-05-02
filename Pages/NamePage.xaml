@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Vista comentada: Vista del primer paso de registro. -->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MiniTFG.NamePage">
+    <VerticalStackLayout Spacing="20" Padding="30">
+        <Label 
+            Text="Introduce tu nombre y tu correo"
+            FontSize="28"
+            FontAttributes="Bold"
+            VerticalOptions="Center" 
+            HorizontalOptions="Center" />
+
+        <Entry
+            Placeholder="Nombre" 
+            x:Name="nameEntry"
+            FontSize="18"
+            BackgroundColor="#EEEEEE"
+            HeightRequest="60"
+            VerticalOptions="Center" 
+            HorizontalOptions="Fill" />
+
+        <Entry
+            Placeholder="Correo electrónico" 
+            x:Name="emailEntry"
+            FontSize="18"
+            BackgroundColor="#EEEEEE"
+            HeightRequest="60"
+            VerticalOptions="Center" 
+            HorizontalOptions="Fill" />
+
+        <Entry
+            Placeholder="Contraseña" 
+            x:Name="passwordEntry"
+            FontSize="18"
+            IsPassword="True" 
+            HeightRequest="60"
+            BackgroundColor="#EEEEEE"
+            VerticalOptions="Center" 
+            HorizontalOptions="Fill" />
+
+        <Entry
+            Placeholder="Repite la contraseña" 
+            x:Name="passwordRepeatEntry"
+            FontSize="18"
+            IsPassword="True" 
+            HeightRequest="60"
+            BackgroundColor="#EEEEEE"
+            VerticalOptions="Center" 
+            HorizontalOptions="Fill" />
+
+        <HorizontalStackLayout>
+            <CheckBox
+                x:Name="chkShow"
+                IsChecked="False"
+                CheckedChanged="ShowCheckedChanged"
+                VerticalOptions="Center"
+                HorizontalOptions="Start" />
+
+            <Label
+                Text="Mostrar contraseña"
+                FontSize="14"
+                VerticalOptions="Center"
+                HorizontalOptions="Start" />
+        </HorizontalStackLayout>
+
+        <Button
+            Text="Siguiente"
+            x:Name="btnNext"
+            Clicked="NextClicked"
+            HeightRequest="50"
+            CornerRadius="0"
+            BackgroundColor="#9C40F7"
+            VerticalOptions="Center"
+            HorizontalOptions="Fill" />
+    </VerticalStackLayout>
+</ContentPage>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Vista comentada: Vista de login, recordar sesión, invitado y acceso a registro. -->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MiniTFG.LoginPage">
+    <VerticalStackLayout Spacing="20" Padding="30">
+        <Label 
+            Text="Inicia sesión"
+            FontSize="28"
+            FontAttributes="Bold"
+            VerticalOptions="Center" 
+            HorizontalOptions="Center" />
+        
+        <Entry 
+            Placeholder="Correo" 
+            x:Name="emailEntry"
+            FontSize="18"
+            BackgroundColor="#EEEEEE"
+            HeightRequest="60"
+            VerticalOptions="Center" 
+            HorizontalOptions="Fill" />
+
+        <HorizontalStackLayout>
+            <CheckBox
+                x:Name="chkRemember"
+                IsChecked="False"
+                CheckedChanged="RememberCheckedChanged"
+                VerticalOptions="Center"
+                HorizontalOptions="Start" />
+
+            <Label
+                Text="Recuérdame"
+                FontSize="14"
+                VerticalOptions="Center"
+                HorizontalOptions="Start" />
+        </HorizontalStackLayout>
+
+        <Entry
+            Placeholder="Contraseña" 
+            x:Name="passwordEntry"
+            FontSize="18"
+            IsPassword="True" 
+            HeightRequest="60"
+            BackgroundColor="#EEEEEE"
+            VerticalOptions="Center" 
+            HorizontalOptions="Fill" />
+
+        <HorizontalStackLayout>
+            <CheckBox
+                x:Name="chkShow"
+                IsChecked="False"
+                CheckedChanged="ShowCheckedChanged"
+                VerticalOptions="Center"
+                HorizontalOptions="Start" />
+
+            <Label
+                Text="Mostrar contraseña"
+                FontSize="14"
+                VerticalOptions="Center"
+                HorizontalOptions="Start" />
+        </HorizontalStackLayout>
+        
+        <Button
+            Text="Iniciar sesión"
+            x:Name="btnSession"
+            Clicked="SessionClicked"
+            HeightRequest="50"
+            CornerRadius="10"
+            BackgroundColor="#9C40F7"
+            VerticalOptions="Center"
+            HorizontalOptions="Fill"
+            Margin="0,50,0,0" />
+
+        <Button
+            Text="Entrar como invitado"
+            x:Name="btnGuest"
+            Clicked="GuestClicked"
+            HeightRequest="50"
+            CornerRadius="10"
+            BackgroundColor="#9C40F7"
+            VerticalOptions="Center"
+            HorizontalOptions="Fill" />
+
+        <Button
+            Text="Crear una cuenta"
+            x:Name="btnCreate"
+            Clicked="CreateClicked"
+            HeightRequest="50"
+            CornerRadius="10"
+            BackgroundColor="#9C40F7"
+            VerticalOptions="Center"
+            HorizontalOptions="Fill" />
+    </VerticalStackLayout>
+</ContentPage>

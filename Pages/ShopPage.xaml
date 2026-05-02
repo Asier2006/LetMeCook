@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Vista comentada: Vista de tienda de skins de foto y banner. -->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MiniTFG.ShopPage">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="30">
+
+            <!-- TÍTULO -->
+            <Label Text="Tienda de skins"
+                   FontSize="32"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   TextColor="#333" />
+
+            <!-- BANNERS -->
+            <VerticalStackLayout Spacing="10">
+                <Label x:Name="LikesLabel"
+                       FontSize="16"
+                       TextColor="#666" />
+
+                <Label Text="Banners"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       TextColor="#444" />
+
+                <ScrollView Orientation="Horizontal">
+                    <HorizontalStackLayout x:Name="BannersContainer"
+                                           Spacing="15">
+                        <!-- Aquí se añadirán los banners dinámicamente -->
+                    </HorizontalStackLayout>
+                </ScrollView>
+            </VerticalStackLayout>
+
+            <!-- FOTOS DE PERFIL -->
+            <VerticalStackLayout Spacing="10">
+                <Label Text="Fotos de perfil"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       TextColor="#444" />
+
+                <ScrollView Orientation="Horizontal">
+                    <HorizontalStackLayout x:Name="FotosContainer"
+                                           Spacing="15">
+                        <!-- Aquí se añadirán las fotos dinámicamente -->
+                    </HorizontalStackLayout>
+                </ScrollView>
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

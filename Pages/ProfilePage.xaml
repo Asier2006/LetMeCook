@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Vista comentada: Vista del perfil del usuario actual. -->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MiniTFG.ProfilePage">
+    <Grid RowDefinitions="Auto, *, Auto">
+
+        <!-- BANNER -->
+        <Grid Grid.Row="0">
+            <Image x:Name="BannerImage"
+                   Source="opbanner.jpg"
+                   Aspect="AspectFill"
+                   HeightRequest="180" />
+
+            <!-- FOTO DE PERFIL SUPERPUESTA -->
+            <Frame CornerRadius="60"
+                   HeightRequest="120"
+                   WidthRequest="120"
+                   BackgroundColor="White"
+                   Padding="3"
+                   VerticalOptions="End"
+                   HorizontalOptions="Center"
+                   Margin="0,-60,0,0">
+                <Image x:Name="ProfileImage"
+                       Source="user.png"
+                       Aspect="AspectFill" />
+            </Frame>
+        </Grid>
+
+        <!-- CONTENIDO -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20" Spacing="20">
+                <Label x:Name="UsernameLabel"
+                       Text="{Binding Nombre}"
+                       FontSize="24"
+                       FontAttributes="Bold"
+                       HorizontalOptions="Center"
+                       Margin="0,0,0,10" />
+
+                <HorizontalStackLayout x:Name="EstrellasContainer" Spacing="4" HorizontalOptions="Center" />
+
+                <HorizontalStackLayout>
+                    <Button Text="Tienda de skins"
+                            BackgroundColor="#9C40F7"
+                            TextColor="White"
+                            CornerRadius="15"
+                            HeightRequest="50"
+                            Clicked="AbrirTiendaClicked" />
+                    <Button Text="Ajustes"
+                            BackgroundColor="#9C40F7"
+                            TextColor="White"
+                            CornerRadius="15"
+                            HeightRequest="50"
+                            Clicked="AbrirAjustesClicked" />
+                </HorizontalStackLayout>
+                
+                <Label Text="Mis recetas"
+                       FontSize="20"
+                       HorizontalOptions="Center" />
+
+                <CollectionView ItemsSource="{Binding MisRecetas}" x:Name="ListaMisRecetas">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border StrokeThickness="0" BackgroundColor="#9C40F7" StrokeShape="RoundRectangle 15" Padding="10" HeightRequest="250">
+                                <Grid ColumnDefinitions="Auto, *">
+                                    <Image Grid.Column="0"
+                                           Source="{Binding ImagenSource}"
+                                           Aspect="AspectFill"
+                                           HeightRequest="200"
+                                           WidthRequest="200" />
+
+                                    <VerticalStackLayout Grid.Column="1" Padding="10,0" Spacing="4">
+                                        <Label Text="{Binding Titulo}" FontAttributes="Bold" TextColor="White" FontSize="18" />
+                                        <Label Text="{Binding Comensales, StringFormat='Comensales: {0}'}" TextColor="White"/>
+                                        <Label Text="{Binding TiempoPreparacion, StringFormat='Tiempo: {0} min'}" TextColor="White" />
+                                        <Label Text="{Binding TipoCocina, StringFormat='Cocina: {0}'}" TextColor="White" />
+                                        <Label Text="{Binding OrigenDelPlato, StringFormat='Origen: {0}'}" TextColor="White" />
+                                        <Label Text="{Binding IngredientePrincipal, StringFormat='Ingrediente principal: {0}'}" LineBreakMode="WordWrap" TextColor="White" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- BOTTOM BAR -->
+        <Grid x:Name="BottomBar"
+              Grid.Row="2"
+              BackgroundColor="#9C40F7"
+              HeightRequest="65"
+              Padding="5"
+              ColumnDefinitions="*,*,*">
+
+            <Button Grid.Column="0"
+                    Text="Inicio"
+                    ImageSource="home.png"
+                    TextColor="Black"
+                    BackgroundColor="#9C40F7"
+                    Clicked="InicioClicked" />
+
+            <Button Grid.Column="1"
+                    Text="Recetas"
+                    TextColor="Black"
+                    ImageSource="recipes.png"
+                    BackgroundColor="#9C40F7"
+                    Clicked="RecetasClicked" />
+
+            <Button Grid.Column="2"
+                    Text="Perfil"
+                    TextColor="Black"
+                    ImageSource="user.png"
+                    BackgroundColor="#9C40F7"
+                    Clicked="PerfilClicked" />
+        </Grid>
+
+    </Grid>
+</ContentPage>

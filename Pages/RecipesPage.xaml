@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Vista comentada: Vista de creación de receta con formulario, imagen, pasos y vídeos. -->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MiniTFG.RecipesPage">
+
+    <Grid RowDefinitions="*, Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="20" Spacing="20">
+                <Label Text="Crear nueva receta"
+                   FontSize="28"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center" />
+
+                <Entry x:Name="NombreEntry"
+                       Placeholder="Nombre del plato"
+                       FontSize="18" />
+
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Imagen del plato" FontAttributes="Bold" FontSize="18" />
+                    <Image x:Name="ImagenPreview"
+                       HeightRequest="180"
+                       BackgroundColor="#DDDDDD"
+                       Aspect="AspectFill" />
+                    <Button Text="Seleccionar imagen"
+                            BackgroundColor="#9C40F7"
+                            Clicked="SeleccionarImagenClicked" />
+                </VerticalStackLayout>
+
+                <Entry x:Name="DescripcionEntry"
+                       Placeholder="Descripción del plato"
+                       FontSize="18" />
+
+                <Entry x:Name="ComensalesEntry"
+                       Placeholder="Comensales (ej: 4)"
+                       FontSize="18"
+                       Keyboard="Numeric" />
+
+                <Entry x:Name="TiempoEntry"
+                       Placeholder="Tiempo (minutos)"
+                       FontSize="18"
+                       Keyboard="Numeric" />
+
+                <Picker x:Name="CocinaPicker" Title="Tipo de cocina" FontSize="18">
+                    <Picker.Items>
+                        <x:String>Vitro</x:String>
+                        <x:String>Horno</x:String>
+                        <x:String>Microondas</x:String>
+                        <x:String>Fuego</x:String>
+                    </Picker.Items>
+                </Picker>
+
+                <Entry x:Name="OrigenEntry"
+                       Placeholder="Origen del plato (ej: Italia)"
+                       FontSize="18" />
+
+                <Entry x:Name="MainIngredientEntry"
+                       Placeholder="Ingrediente principal (ej: Pollo)"
+                       FontSize="18" />
+
+                <Label Text="¿Contiene este alérgeno?" FontAttributes="Bold" VerticalOptions="Center" FontSize="18" />
+                <CollectionView ItemsSource="{Binding Alergenos}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <HorizontalStackLayout Spacing="10" Padding="10">
+                                <CheckBox IsChecked="{Binding Seleccion}" VerticalOptions="Center" />
+                                <Label Text="{Binding Nombre}" FontSize="18" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Label Text="¿Es apto para esta preferencia?" FontAttributes="Bold" VerticalOptions="Center" FontSize="18" />
+                <CollectionView ItemsSource="{Binding Preferencias}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <HorizontalStackLayout Spacing="10" Padding="10">
+                                <CheckBox IsChecked="{Binding Seleccion}" VerticalOptions="Center" />
+                                <Label Text="{Binding Nombre}" FontSize="18" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Label Text="Pasos de la receta (vídeos)" FontAttributes="Bold" FontSize="18" />
+
+                <VerticalStackLayout x:Name="PasosContainer" Spacing="10" />
+
+                <Button Text="Añadir paso"
+                        BackgroundColor="#7A1CCF"
+                        TextColor="White"
+                        CornerRadius="10"
+                        Clicked="AgregarPasoClicked" />
+
+                <Button Text="Guardar receta"
+                        BackgroundColor="#9C40F7"
+                        TextColor="White"
+                        CornerRadius="10"
+                        HeightRequest="50"
+                        Clicked="GuardarRecetaClicked" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Grid x:Name="BottomBar"
+              Grid.Row="1"
+              BackgroundColor="#9C40F7"
+              HeightRequest="65"
+              Padding="5"
+              ColumnDefinitions="*,*,*"
+              VerticalOptions="End">
+
+            <Button Grid.Column="0"
+                    Text="Inicio"
+                    TextColor="Black"
+                    ImageSource="home.png"
+                    BackgroundColor="#9C40F7"
+                    Clicked="InicioClicked" />
+
+            <Button Grid.Column="1"
+                    Text="Recetas"
+                    TextColor="Black"
+                    ImageSource="recipes.png"
+                    BackgroundColor="#9C40F7"
+                    Clicked="RecetasClicked" />
+
+            <Button Grid.Column="2"
+                    Text="Perfil"
+                    TextColor="Black"
+                    ImageSource="user.png"
+                    BackgroundColor="#9C40F7"
+                    Clicked="PerfilClicked" />
+        </Grid>
+    </Grid>
+</ContentPage>
