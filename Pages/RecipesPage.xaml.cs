@@ -1,24 +1,34 @@
 using System.Collections.ObjectModel;
-using Microsoft.Maui.Devices;
+using System.Globalization;
+using System.Text;
 using Microsoft.Maui.Storage;
 
 namespace MiniTFG;
 
 /// <summary>
-/// Formulario de creación de recetas con imagen, metadatos, alérgenos, preferencias y pasos.
+/// Formulario de creación básica. Los pasos se añaden después desde la página avanzada Let me Cook.
 /// </summary>
 public partial class RecipesPage : ContentPage
 {
     public ObservableCollection<AlergenosPreferencias> Alergenos { get; set; }
     public ObservableCollection<AlergenosPreferencias> Preferencias { get; set; }
-    double lastScrollY = 0;
-    bool isBarHidden = false;
+    public ObservableCollection<string> OrigenSugerencias { get; set; } = new();
+    public ObservableCollection<string> TipoCocinaSugerencias { get; set; } = new();
+    public ObservableCollection<string> IngredienteSugerencias { get; set; } = new();
+
+    private readonly HashSet<string> _origenesSeleccionados = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _tiposCocinaSeleccionados = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _ingredientesSeleccionados = new(StringComparer.OrdinalIgnoreCase);
+
+    private List<string> _catalogoOrigenes = new();
+    private List<string> _catalogoTiposCocina = new();
+    private List<string> _catalogoIngredientes = new();
     private string imagenBase64 = null;
-    private List<PasoReceta> _pasos = new();
-    private int _contadorPasos = 0;
+    private bool _guardando;
+
     public RecipesPage()
-	{
-		InitializeComponent();
+    {
+        InitializeComponent();
 
         Alergenos = new ObservableCollection<AlergenosPreferencias>
         {
@@ -43,12 +53,37 @@ public partial class RecipesPage : ContentPage
             new AlergenosPreferencias { Nombre = "Vegano", Seleccion = false },
             new AlergenosPreferencias { Nombre = "Vegetariano", Seleccion = false },
         };
+
         BindingContext = this;
     }
 
-	private async void InicioClicked(object sender, EventArgs e)
-	{
-		await Shell.Current.GoToAsync("//home");
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await CargarCatalogosAsync();
+    }
+
+    private async Task CargarCatalogosAsync()
+    {
+        try
+        {
+            var api = new DatabaseService();
+            await api.EnsureCatalogosAsync();
+            _catalogoOrigenes = await api.GetOrigenesPlatoAsync();
+            _catalogoTiposCocina = await api.GetTiposCocinaAsync();
+            _catalogoIngredientes = await api.GetIngredientesAsync();
+        }
+        catch
+        {
+            _catalogoOrigenes = new List<string>();
+            _catalogoTiposCocina = new List<string>();
+            _catalogoIngredientes = new List<string>();
+        }
+    }
+
+    private async void InicioClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync("//home");
     }
 
     private async void RecetasClicked(object sender, EventArgs e)
@@ -68,24 +103,19 @@ public partial class RecipesPage : ContentPage
         await Shell.Current.GoToAsync("//profile");
     }
 
-    // Permite elegir si la imagen de la receta viene de cámara o galería.
     private async void SeleccionarImagenClicked(object sender, EventArgs e)
     {
         string opcion = await DisplayActionSheetAsync(
-        "Seleccionar imagen",
-        "Cancelar",
-        null,
-        "Hacer foto",
-        "Elegir de la galería");
+            "Seleccionar imagen",
+            "Cancelar",
+            null,
+            "Hacer foto",
+            "Elegir de la galería");
 
         if (opcion == "Hacer foto")
-        {
             await TomarFoto();
-        }
         else if (opcion == "Elegir de la galería")
-        {
             await ElegirDeGaleria();
-        }
     }
 
     private async Task TomarFoto()
@@ -94,18 +124,16 @@ public partial class RecipesPage : ContentPage
         {
             var foto = await MediaPicker.CapturePhotoAsync();
 
-            if (foto != null)
-            {
-                using var stream = await foto.OpenReadAsync();
-                using var memoryStream = new MemoryStream();
-                await stream.CopyToAsync(memoryStream);
-                byte[] imageBytes = memoryStream.ToArray();
-                imagenBase64 = Convert.ToBase64String(imageBytes);
-                
-                ImagenPreview.Source = ImageSource.FromFile(foto.FullPath);
-            }
+            if (foto == null)
+                return;
+
+            using var stream = await foto.OpenReadAsync();
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            imagenBase64 = Convert.ToBase64String(memoryStream.ToArray());
+            ImagenPreview.Source = ImageSource.FromFile(foto.FullPath);
         }
-        catch (Exception ex)
+        catch
         {
             await DisplayAlertAsync("Error", "No se pudo abrir la cámara", "OK");
         }
@@ -117,255 +145,286 @@ public partial class RecipesPage : ContentPage
         {
             var foto = await MediaPicker.PickPhotoAsync();
 
-            if (foto != null)
-            {
-                using var stream = await foto.OpenReadAsync();
-                using var memoryStream = new MemoryStream();
-                await stream.CopyToAsync(memoryStream);
-                byte[] imageBytes = memoryStream.ToArray();
-                imagenBase64 = Convert.ToBase64String(imageBytes);
-                
-                ImagenPreview.Source = ImageSource.FromFile(foto.FullPath);
-            }
+            if (foto == null)
+                return;
+
+            using var stream = await foto.OpenReadAsync();
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            imagenBase64 = Convert.ToBase64String(memoryStream.ToArray());
+            ImagenPreview.Source = ImageSource.FromFile(foto.FullPath);
         }
-        catch (Exception ex)
+        catch
         {
             await DisplayAlertAsync("Error", "No se pudo seleccionar la imagen", "OK");
         }
     }
 
-    // Limita el selector de archivos a formatos de vídeo soportados por cada plataforma.
-    private static PickOptions GetVideoPickOptions(string titulo)
+    private void OnOrigenTextChanged(object sender, TextChangedEventArgs e)
     {
-        return new PickOptions
+        ActualizarSugerencias(_catalogoOrigenes, e.NewTextValue, OrigenSugerencias);
+    }
+
+    private void OnTipoCocinaTextChanged(object sender, TextChangedEventArgs e)
+    {
+        ActualizarSugerencias(_catalogoTiposCocina, e.NewTextValue, TipoCocinaSugerencias);
+    }
+
+    private void OnIngredienteTextChanged(object sender, TextChangedEventArgs e)
+    {
+        ActualizarSugerencias(_catalogoIngredientes, e.NewTextValue, IngredienteSugerencias);
+    }
+
+    private void OnOrigenSugerenciaTapped(object sender, EventArgs e)
+    {
+        AgregarEtiqueta(_origenesSeleccionados, ObtenerTextoEtiqueta(sender));
+        OrigenEntry.Text = string.Empty;
+        OrigenSugerencias.Clear();
+        ActualizarTagsVisuales();
+    }
+
+    private void OnTipoCocinaSugerenciaTapped(object sender, EventArgs e)
+    {
+        AgregarEtiqueta(_tiposCocinaSeleccionados, ObtenerTextoEtiqueta(sender));
+        TipoCocinaEntry.Text = string.Empty;
+        TipoCocinaSugerencias.Clear();
+        ActualizarTagsVisuales();
+    }
+
+    private void OnIngredienteSugerenciaTapped(object sender, EventArgs e)
+    {
+        AgregarEtiqueta(_ingredientesSeleccionados, ObtenerTextoEtiqueta(sender));
+        IngredienteEntry.Text = string.Empty;
+        IngredienteSugerencias.Clear();
+        ActualizarTagsVisuales();
+    }
+
+    private static string ObtenerTextoEtiqueta(object sender)
+    {
+        return sender switch
         {
-            PickerTitle = titulo,
-            FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+            BindableObject bindable when bindable.BindingContext is string text => text,
+            _ => null
+        };
+    }
+
+    private static void ActualizarSugerencias(IEnumerable<string> catalogo, string busqueda, ObservableCollection<string> destino)
+    {
+        destino.Clear();
+
+        if (string.IsNullOrWhiteSpace(busqueda))
+            return;
+
+        foreach (var item in catalogo
+                     .Where(x => ContieneNormalizado(x, busqueda))
+                     .OrderBy(x => x)
+                     .Take(8))
+        {
+            destino.Add(item);
+        }
+    }
+
+    private void AgregarEtiqueta(HashSet<string> destino, string etiqueta)
+    {
+        if (!string.IsNullOrWhiteSpace(etiqueta))
+            destino.Add(etiqueta.Trim());
+    }
+
+    private void ActualizarTagsVisuales()
+    {
+        PintarTags(OrigenTagsLayout, _origenesSeleccionados);
+        PintarTags(TipoCocinaTagsLayout, _tiposCocinaSeleccionados);
+        PintarTags(IngredienteTagsLayout, _ingredientesSeleccionados);
+    }
+
+    private void PintarTags(FlexLayout layout, HashSet<string> etiquetas)
+    {
+        layout.Children.Clear();
+
+        foreach (var etiqueta in etiquetas.ToList())
+            layout.Children.Add(CrearTag(etiqueta, () => etiquetas.Remove(etiqueta)));
+    }
+
+    private View CrearTag(string texto, Action quitar)
+    {
+        var tag = new Border
+        {
+            StrokeThickness = 0,
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
+            BackgroundColor = Color.FromArgb("#6A0DAD"),
+            Padding = new Thickness(10, 5),
+            Margin = new Thickness(2),
+            Content = new Label
             {
-                { DevicePlatform.Android, new[] { "video/*" } },
-                { DevicePlatform.iOS, new[] { "public.movie" } },
-                { DevicePlatform.MacCatalyst, new[] { "public.movie" } },
-                { DevicePlatform.WinUI, new[] { ".mp4", ".mov", ".avi", ".mkv", ".webm" } }
+                Text = $"{texto} ✕",
+                TextColor = Colors.White,
+                FontSize = 12
+            }
+        };
+
+        tag.GestureRecognizers.Add(new TapGestureRecognizer
+        {
+            Command = new Command(() =>
+            {
+                quitar?.Invoke();
+                ActualizarTagsVisuales();
             })
-        };
+        });
+
+        return tag;
     }
 
-    // Añade dinámicamente un bloque visual para un paso y guarda descripción/vídeo en memoria.
-    private const long MAX_VIDEO_SIZE_BYTES = 30L * 1024L * 1024L; // 30 mnegabytes
-
-    private async void AgregarPasoClicked(object sender, EventArgs e)
+    private void CompletarEtiquetasDesdeTexto()
     {
-        _contadorPasos++;
-        int numeroPaso = _contadorPasos;
-
-        var paso = new PasoReceta { NumeroPaso = numeroPaso };
-        _pasos.Add(paso);
-
-        var pasoLayout = new VerticalStackLayout { Spacing = 5, Padding = new Thickness(0, 5) };
-
-        var label = new Label
-        {
-            Text = $"Paso {numeroPaso}",
-            FontAttributes = FontAttributes.Bold,
-            FontSize = 16
-        };
-
-        var descripcionEntry = new Entry
-        {
-            Placeholder = $"Descripción del paso {numeroPaso}",
-            FontSize = 16
-        };
-
-        descripcionEntry.TextChanged += (s, args) =>
-        {
-            paso.Descripcion = args.NewTextValue;
-        };
-
-        var videoLabel = new Label
-        {
-            Text = "Sin vídeo seleccionado",
-            FontSize = 14,
-            TextColor = Colors.Gray
-        };
-
-        var videoButton = new Button
-        {
-            Text = "Seleccionar vídeo",
-            BackgroundColor = Color.FromArgb("#9C40F7"),
-            TextColor = Colors.White,
-            CornerRadius = 8
-        };
-
-        videoButton.Clicked += async (s, args) =>
-        {
-            try
-            {
-                var result = await FilePicker.PickAsync(
-                    GetVideoPickOptions($"Selecciona el vídeo del paso {numeroPaso}")
-                );
-
-                if (result == null)
-                    return;
-
-                using var stream = await result.OpenReadAsync();
-
-                // Si el sistema permite saber el tamaño directamente, lo comprobamos antes.
-                if (stream.CanSeek && stream.Length > MAX_VIDEO_SIZE_BYTES)
-                {
-                    await DisplayAlertAsync(
-                        "Vídeo demasiado grande",
-                        "El vídeo no puede superar los 30 MB.",
-                        "OK"
-                    );
-
-                    return;
-                }
-
-                using var ms = new MemoryStream();
-                byte[] buffer = new byte[81920];
-                long totalBytes = 0;
-                int bytesRead;
-
-                // Leemos el archivo por partes para evitar cargar vídeos enormes en memoria.
-                while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                {
-                    totalBytes += bytesRead;
-
-                    if (totalBytes > MAX_VIDEO_SIZE_BYTES)
-                    {
-                        await DisplayAlertAsync(
-                            "Vídeo demasiado grande",
-                            "El vídeo no puede superar los 30 MB.",
-                            "OK"
-                        );
-
-                        return;
-                    }
-
-                    await ms.WriteAsync(buffer, 0, bytesRead);
-                }
-
-                paso.Video = Convert.ToBase64String(ms.ToArray());
-                paso.VideoNombreArchivo = result.FileName;
-                paso.VideoContentType = string.IsNullOrWhiteSpace(result.ContentType)
-                    ? "video/mp4"
-                    : result.ContentType;
-
-                videoLabel.Text = result.FileName;
-            }
-            catch
-            {
-                await DisplayAlertAsync("Error", "No se pudo seleccionar el vídeo", "OK");
-            }
-        };
-
-        pasoLayout.Children.Add(label);
-        pasoLayout.Children.Add(descripcionEntry);
-        pasoLayout.Children.Add(videoButton);
-        pasoLayout.Children.Add(videoLabel);
-
-        PasosContainer.Children.Add(pasoLayout);
+        CompletarEtiqueta(OrigenEntry.Text, _catalogoOrigenes, _origenesSeleccionados);
+        CompletarEtiqueta(TipoCocinaEntry.Text, _catalogoTiposCocina, _tiposCocinaSeleccionados);
+        CompletarEtiqueta(IngredienteEntry.Text, _catalogoIngredientes, _ingredientesSeleccionados);
     }
 
-    // Valida el formulario, inserta la receta y después inserta sus pasos asociados.
+    private void CompletarEtiqueta(string texto, List<string> catalogo, HashSet<string> destino)
+    {
+        if (string.IsNullOrWhiteSpace(texto))
+            return;
+
+        var match = catalogo.FirstOrDefault(x => ContieneNormalizado(x, texto));
+        destino.Add((match ?? texto).Trim());
+    }
+
     private async void GuardarRecetaClicked(object sender, EventArgs e)
     {
+        var creada = await GuardarRecetaBaseAsync();
+
+        if (creada == null)
+            return;
+
+        await DisplayAlertAsync("Éxito", "Receta creada correctamente. Puedes completarla más tarde desde Let me Cook.", "OK");
+        LimpiarFormulario();
+        await Shell.Current.GoToAsync("//home");
+    }
+
+    private async void LetMeCookClicked(object sender, EventArgs e)
+    {
+        var creada = await GuardarRecetaBaseAsync();
+
+        if (creada == null)
+            return;
+
+        LimpiarFormulario();
+        await Shell.Current.GoToAsync($"letmecook?recetaId={creada.Id}&usuarioId={creada.UsuarioId}");
+    }
+
+    private async Task<Receta> GuardarRecetaBaseAsync()
+    {
+        if (_guardando)
+            return null;
+
         if (App.UsuarioActual == null)
         {
             await DisplayAlertAsync("Error", "Debes iniciar sesión para crear una receta.", "OK");
-            return;
+            return null;
         }
 
         if (string.IsNullOrWhiteSpace(NombreEntry.Text) ||
             string.IsNullOrWhiteSpace(DescripcionEntry.Text) ||
-            string.IsNullOrWhiteSpace(ComensalesEntry.Text) ||
-            string.IsNullOrWhiteSpace(TiempoEntry.Text) ||
-            string.IsNullOrWhiteSpace(OrigenEntry.Text) ||
-            string.IsNullOrWhiteSpace(MainIngredientEntry.Text) ||
-            CocinaPicker.SelectedItem == null)
+            string.IsNullOrWhiteSpace(ComensalesEntry.Text))
         {
-            await DisplayAlertAsync("Error", "Rellena todos los datos principales de la receta.", "OK");
-            return;
+            await DisplayAlertAsync("Campos obligatorios", "Rellena nombre, descripción y comensales.", "OK");
+            return null;
         }
 
         if (!int.TryParse(ComensalesEntry.Text, out int comensales) || comensales <= 0)
         {
             await DisplayAlertAsync("Error", "Los comensales deben ser un número mayor que 0.", "OK");
-            return;
+            return null;
         }
 
-        if (_pasos.Count == 0)
+        _guardando = true;
+
+        try
         {
-            await DisplayAlertAsync("Error", "Añade al menos un paso a la receta.", "OK");
-            return;
+            CompletarEtiquetasDesdeTexto();
+            ActualizarTagsVisuales();
+
+            var receta = new Receta
+            {
+                UsuarioId = App.UsuarioActual.Id,
+                Titulo = NombreEntry.Text.Trim(),
+                Imagen = imagenBase64,
+                Descripcion = DescripcionEntry.Text.Trim(),
+                Comensales = comensales,
+                OrigenDelPlato = _origenesSeleccionados.Count == 0 ? null : string.Join(", ", _origenesSeleccionados),
+                TiempoPreparacion = string.IsNullOrWhiteSpace(TiempoEntry.Text) ? null : TiempoEntry.Text.Trim(),
+                TipoCocina = _tiposCocinaSeleccionados.Count == 0 ? null : string.Join(", ", _tiposCocinaSeleccionados),
+                IngredientePrincipal = _ingredientesSeleccionados.Count == 0 ? null : string.Join(", ", _ingredientesSeleccionados)
+            };
+
+            AplicarAlergenosYPreferencias(receta);
+
+            var api = new DatabaseService();
+            var creada = await api.PostRecetaAsync(receta);
+
+            if (creada == null)
+            {
+                await DisplayAlertAsync("Error", "No se pudo guardar la receta.", "OK");
+                return null;
+            }
+
+            await api.GuardarEtiquetasRecetaAsync(
+                creada.Id,
+                _origenesSeleccionados,
+                _tiposCocinaSeleccionados,
+                _ingredientesSeleccionados);
+
+            int puntos = CalcularPuntosBase();
+            if (puntos > 0)
+                await api.SumarPuntosUsuarioAsync(App.UsuarioActual.Id, puntos);
+
+            return creada;
         }
-
-        if (_pasos.Any(paso => string.IsNullOrWhiteSpace(paso.Descripcion)))
+        catch (Exception ex)
         {
-            await DisplayAlertAsync("Error", "Todos los pasos deben tener descripción.", "OK");
-            return;
+            await DisplayAlertAsync("Error", $"No se pudo crear la receta: {ex.Message}", "OK");
+            return null;
         }
-
-        var receta = new Receta
+        finally
         {
-            UsuarioId = App.UsuarioActual.Id,
-            Titulo = NombreEntry.Text.Trim(),
-            Imagen = imagenBase64,
-            Descripcion = DescripcionEntry.Text.Trim(),
-            Comensales = comensales,
-            OrigenDelPlato = OrigenEntry.Text.Trim(),
-            TiempoPreparacion = TiempoEntry.Text.Trim(),
-            TipoCocina = CocinaPicker.SelectedItem?.ToString(),
-            IngredientePrincipal = MainIngredientEntry.Text.Trim()
-        };
+            _guardando = false;
+        }
+    }
 
-        // Asignamos los alérgenos y preferencias seleccionados
+    private int CalcularPuntosBase()
+    {
+        int puntos = 0;
+
+        if (!string.IsNullOrWhiteSpace(imagenBase64)) puntos += 1;
+        if (!string.IsNullOrWhiteSpace(TiempoEntry.Text)) puntos += 1;
+        if (_origenesSeleccionados.Count > 0) puntos += 1;
+        if (_tiposCocinaSeleccionados.Count > 0) puntos += 1;
+        if (_ingredientesSeleccionados.Count > 0) puntos += 1;
+
+        return puntos;
+    }
+
+    private void AplicarAlergenosYPreferencias(Receta receta)
+    {
         foreach (var alergeno in Alergenos)
         {
             switch (alergeno.Nombre)
             {
-                case "Gluten":
-                    receta.Gluten = alergeno.Seleccion;
-                    break;
-                case "Leche":
-                    receta.Lactosa = alergeno.Seleccion;
-                    break;
-                case "Frutos secos":
-                    receta.FrutosSecos = alergeno.Seleccion;
-                    break;
-                case "Marisco":
-                    receta.Mariscos = alergeno.Seleccion;
-                    break;
-                case "Huevos":
-                    receta.Huevo = alergeno.Seleccion;
-                    break;
-                case "Soja":
-                    receta.Soja = alergeno.Seleccion;
-                    break;
-                case "Pescado":
-                    receta.Pescado = alergeno.Seleccion;
-                    break;
-                case "Cacahuetes":
-                    receta.Cacahuetes = alergeno.Seleccion;
-                    break;
-                case "Sésamo":
-                    receta.Sesamo = alergeno.Seleccion;
-                    break;
-                case "Sulfitos":
-                    receta.Sulfitos = alergeno.Seleccion;
-                    break;
-                case "Mostaza":
-                    receta.Mostaza = alergeno.Seleccion;
-                    break;
-                case "Altramuces":
-                    receta.Altramuces = alergeno.Seleccion;
-                    break;
-                case "Moluscos":
-                    receta.Moluscos = alergeno.Seleccion;
-                    break;
-                case "Apio":
-                    receta.Apio = alergeno.Seleccion;
-                    break;
+                case "Gluten": receta.Gluten = alergeno.Seleccion; break;
+                case "Leche": receta.Lactosa = alergeno.Seleccion; break;
+                case "Frutos secos": receta.FrutosSecos = alergeno.Seleccion; break;
+                case "Marisco": receta.Mariscos = alergeno.Seleccion; break;
+                case "Huevos": receta.Huevo = alergeno.Seleccion; break;
+                case "Soja": receta.Soja = alergeno.Seleccion; break;
+                case "Pescado": receta.Pescado = alergeno.Seleccion; break;
+                case "Cacahuetes": receta.Cacahuetes = alergeno.Seleccion; break;
+                case "Sésamo": receta.Sesamo = alergeno.Seleccion; break;
+                case "Sulfitos": receta.Sulfitos = alergeno.Seleccion; break;
+                case "Mostaza": receta.Mostaza = alergeno.Seleccion; break;
+                case "Altramuces": receta.Altramuces = alergeno.Seleccion; break;
+                case "Moluscos": receta.Moluscos = alergeno.Seleccion; break;
+                case "Apio": receta.Apio = alergeno.Seleccion; break;
             }
         }
 
@@ -373,56 +432,58 @@ public partial class RecipesPage : ContentPage
         {
             switch (preferencia.Nombre)
             {
-                case "Vegano":
-                    receta.Vegano = preferencia.Seleccion;
-                    break;
-                case "Vegetariano":
-                    receta.Vegetariano = preferencia.Seleccion;
-                    break;
+                case "Vegano": receta.Vegano = preferencia.Seleccion; break;
+                case "Vegetariano": receta.Vegetariano = preferencia.Seleccion; break;
             }
         }
+    }
 
-        var api = new DatabaseService();
-        var creada = await api.PostRecetaAsync(receta);
-
-        if (creada == null)
-        {
-            await DisplayAlertAsync("Error", "No se pudo guardar la receta.", "OK");
-            return;
-        }
-
-        foreach (var paso in _pasos)
-        {
-
-           
-                paso.RecetaId = creada.Id;
-                await api.PostPasoRecetaAsync(paso);
-
-
-
-        }
-
-        _pasos.Clear();
-        _contadorPasos = 0;
+    private void LimpiarFormulario()
+    {
         imagenBase64 = null;
-        PasosContainer.Children.Clear();
-
         NombreEntry.Text = string.Empty;
         DescripcionEntry.Text = string.Empty;
         ComensalesEntry.Text = string.Empty;
         TiempoEntry.Text = string.Empty;
         OrigenEntry.Text = string.Empty;
-        MainIngredientEntry.Text = string.Empty;
-        CocinaPicker.SelectedItem = null;
+        TipoCocinaEntry.Text = string.Empty;
+        IngredienteEntry.Text = string.Empty;
         ImagenPreview.Source = null;
+
+        _origenesSeleccionados.Clear();
+        _tiposCocinaSeleccionados.Clear();
+        _ingredientesSeleccionados.Clear();
+        OrigenSugerencias.Clear();
+        TipoCocinaSugerencias.Clear();
+        IngredienteSugerencias.Clear();
+        ActualizarTagsVisuales();
 
         foreach (var alergeno in Alergenos)
             alergeno.Seleccion = false;
 
         foreach (var preferencia in Preferencias)
             preferencia.Seleccion = false;
+    }
 
-        await DisplayAlertAsync("Éxito", "Receta creada correctamente.", "OK");
-        await Shell.Current.GoToAsync("//home");
+    private static bool ContieneNormalizado(string origen, string busqueda)
+    {
+        if (string.IsNullOrWhiteSpace(origen) || string.IsNullOrWhiteSpace(busqueda))
+            return false;
+
+        return Normalizar(origen).Contains(Normalizar(busqueda), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string Normalizar(string texto)
+    {
+        var normalized = texto.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder();
+
+        foreach (var c in normalized)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                sb.Append(char.ToLowerInvariant(c));
+        }
+
+        return sb.ToString().Normalize(NormalizationForm.FormC);
     }
 }

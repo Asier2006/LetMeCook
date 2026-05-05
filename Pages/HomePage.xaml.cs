@@ -1,60 +1,75 @@
 using CommunityToolkit.Maui.Views;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Globalization;
+using System.Text;
 
 namespace MiniTFG;
 
 /// <summary>
-/// Lista recetas, filtra resultados y sincroniza acciones sociales con MySQL.
+/// Lista recetas, filtra resultados con etiquetas de BBDD y sincroniza acciones sociales con MySQL.
 /// </summary>
 public partial class HomePage : ContentPage
 {
     public ObservableCollection<Receta> Recetas { get; set; } = new();
-    private List<Receta> TodasLasRecetas;
-    private List<Receta> RecetasFiltradasBase;
-    public int Likes { get; set; }
-    public bool UsuarioHaDadoLike { get; set; }
+    public ObservableCollection<string> OrigenSugerencias { get; set; } = new();
+    public ObservableCollection<string> TipoCocinaSugerencias { get; set; } = new();
+    public ObservableCollection<string> IngredienteSugerencias { get; set; } = new();
 
-    // almacena localmente los ids de recetas que el usuario ya ha marcado como like
+    private List<Receta> TodasLasRecetas = new();
+    private List<Receta> RecetasFiltradasBase = new();
+    private List<string> _catalogoOrigenes = new();
+    private List<string> _catalogoTiposCocina = new();
+    private List<string> _catalogoIngredientes = new();
+
+    private readonly HashSet<string> _origenesSeleccionados = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _tiposCocinaSeleccionados = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _ingredientesSeleccionados = new(StringComparer.OrdinalIgnoreCase);
+
     private HashSet<int> _likesUsuario = new();
     private HashSet<int> _usuariosValorados = new();
     private bool _filtrosPreferenciasActivos = true;
     private bool _estaCargandoRecetas = false;
 
-    protected override async void OnAppearing()
-    {
-        base.OnAppearing();
-
-        // Cada vez que se entra al Home se recargan los likes y valoraciones
-        // del usuario actual. Esto evita mantener datos de la cuenta anterior.
-        await CargarRecetasAsync();
-    }
-
     public HomePage()
     {
         InitializeComponent();
         BindingContext = this;
+    }
 
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await CargarCatalogosAsync();
+        await CargarRecetasAsync();
+    }
+
+    private async Task CargarCatalogosAsync()
+    {
+        try
+        {
+            var api = new DatabaseService();
+            await api.EnsureCatalogosAsync();
+            _catalogoOrigenes = await api.GetOrigenesPlatoAsync();
+            _catalogoTiposCocina = await api.GetTiposCocinaAsync();
+            _catalogoIngredientes = await api.GetIngredientesAsync();
+        }
+        catch
+        {
+            // La app puede seguir funcionando filtrando por texto aunque la BBDD no tenga todavía las tablas nuevas.
+            _catalogoOrigenes = new List<string>();
+            _catalogoTiposCocina = new List<string>();
+            _catalogoIngredientes = new List<string>();
+        }
     }
 
     private async void OnCreatorClicked(object sender, EventArgs e)
     {
-        // Navega al perfil público del creador usando su id como parámetro de Shell.
-        var button = sender as Button;
-        int creadorId = (int)button.CommandParameter;
-
-        await Shell.Current.GoToAsync($"other?usuarioId={creadorId}");
+        if (sender is Button button && button.CommandParameter is int creadorId)
+            await Shell.Current.GoToAsync($"other?usuarioId={creadorId}");
     }
 
-
-    // Aplica filtros automáticos: excluye alérgenos marcados y respeta dieta vegana/vegetariana.
     private List<Receta> FiltrarPorPreferencias(List<Receta> recetas, Usuario usuario)
     {
-        // Parte de todas las recetas y va descartando las que no cumplen las preferencias del usuario.
         var filtradas = recetas.AsEnumerable();
 
         if (usuario.Gluten) filtradas = filtradas.Where(r => !r.Gluten);
@@ -88,65 +103,170 @@ public partial class HomePage : ContentPage
         ActualizarTags();
     }
 
-    private void ActualizarTags()
+    private void OnOrigenTextChanged(object sender, TextChangedEventArgs e)
     {
-        TagsLayout.Children.Clear();
+        ActualizarSugerencias(_catalogoOrigenes, e.NewTextValue, OrigenSugerencias);
+    }
 
-        var filtros = new (string Nombre, string Valor)[]
+    private void OnTipoCocinaTextChanged(object sender, TextChangedEventArgs e)
+    {
+        ActualizarSugerencias(_catalogoTiposCocina, e.NewTextValue, TipoCocinaSugerencias);
+    }
+
+    private void OnIngredienteTextChanged(object sender, TextChangedEventArgs e)
+    {
+        ActualizarSugerencias(_catalogoIngredientes, e.NewTextValue, IngredienteSugerencias);
+    }
+
+    private void OnOrigenSugerenciaTapped(object sender, EventArgs e)
+    {
+        var etiqueta = ObtenerTextoEtiqueta(sender);
+        AgregarEtiqueta(_origenesSeleccionados, etiqueta);
+        EntryOrigen.Text = string.Empty;
+        OrigenSugerencias.Clear();
+        ActualizarTags();
+        OnBuscarClicked(null, null);
+    }
+
+    private void OnTipoCocinaSugerenciaTapped(object sender, EventArgs e)
+    {
+        var etiqueta = ObtenerTextoEtiqueta(sender);
+        AgregarEtiqueta(_tiposCocinaSeleccionados, etiqueta);
+        EntryTipoCocina.Text = string.Empty;
+        TipoCocinaSugerencias.Clear();
+        ActualizarTags();
+        OnBuscarClicked(null, null);
+    }
+
+    private void OnIngredienteSugerenciaTapped(object sender, EventArgs e)
+    {
+        var etiqueta = ObtenerTextoEtiqueta(sender);
+        AgregarEtiqueta(_ingredientesSeleccionados, etiqueta);
+        EntryIngrediente.Text = string.Empty;
+        IngredienteSugerencias.Clear();
+        ActualizarTags();
+        OnBuscarClicked(null, null);
+    }
+
+    private static string ObtenerTextoEtiqueta(object sender)
+    {
+        return sender switch
         {
-            ("Comensales", EntryComensales.Text),
-            ("Origen", EntryOrigen.Text),
-            ("Tiempo", EntryTiempo.Text),
-            ("Cocina", EntryTipoCocina.Text),
-            ("Ingrediente", EntryIngrediente.Text)
+            BindableObject bindable when bindable.BindingContext is string text => text,
+            _ => null
         };
+    }
 
-        foreach (var (nombre, valor) in filtros)
+    private static void AgregarEtiqueta(HashSet<string> destino, string etiqueta)
+    {
+        if (!string.IsNullOrWhiteSpace(etiqueta))
+            destino.Add(etiqueta.Trim());
+    }
+
+    private static void ActualizarSugerencias(IEnumerable<string> catalogo, string busqueda, ObservableCollection<string> destino)
+    {
+        destino.Clear();
+
+        if (string.IsNullOrWhiteSpace(busqueda))
+            return;
+
+        foreach (var item in catalogo
+                     .Where(x => ContieneNormalizado(x, busqueda))
+                     .OrderBy(x => x)
+                     .Take(8))
         {
-            if (string.IsNullOrWhiteSpace(valor)) continue;
-
-            var tag = new Border
-            {
-                StrokeThickness = 0,
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
-                BackgroundColor = Color.FromArgb("#6A0DAD"),
-                Padding = new Thickness(10, 5),
-                Margin = new Thickness(2)
-            };
-
-            var label = new Label
-            {
-                Text = $"{nombre}: {valor.Trim()} ✕",
-                TextColor = Colors.White,
-                FontSize = 12
-            };
-
-            string nombreCaptura = nombre;
-            tag.GestureRecognizers.Add(new TapGestureRecognizer
-            {
-                Command = new Command(() =>
-                {
-                    switch (nombreCaptura)
-                    {
-                        case "Comensales": EntryComensales.Text = string.Empty; break;
-                        case "Origen": EntryOrigen.Text = string.Empty; break;
-                        case "Tiempo": EntryTiempo.Text = string.Empty; break;
-                        case "Cocina": EntryTipoCocina.Text = string.Empty; break;
-                        case "Ingrediente": EntryIngrediente.Text = string.Empty; break;
-                    }
-                    ActualizarTags();
-                    OnBuscarClicked(null, null);
-                })
-            });
-
-            tag.Content = label;
-            TagsLayout.Children.Add(tag);
+            destino.Add(item);
         }
     }
 
-    // Combina filtros manuales de búsqueda con la base ya filtrada por preferencias.
+    private void SeleccionarPrimeraCoincidenciaSiExiste(string texto, List<string> catalogo, HashSet<string> destino)
+    {
+        if (string.IsNullOrWhiteSpace(texto) || destino.Count > 0)
+            return;
+
+        var match = catalogo.FirstOrDefault(x => ContieneNormalizado(x, texto));
+        if (!string.IsNullOrWhiteSpace(match))
+            destino.Add(match);
+    }
+
+    private void AplicarTextoComoEtiquetaSiProcede()
+    {
+        SeleccionarPrimeraCoincidenciaSiExiste(EntryOrigen.Text, _catalogoOrigenes, _origenesSeleccionados);
+        SeleccionarPrimeraCoincidenciaSiExiste(EntryTipoCocina.Text, _catalogoTiposCocina, _tiposCocinaSeleccionados);
+        SeleccionarPrimeraCoincidenciaSiExiste(EntryIngrediente.Text, _catalogoIngredientes, _ingredientesSeleccionados);
+    }
+
+    private void ActualizarTags()
+    {
+        TagsLayout.Children.Clear();
+        OrigenTagsLayout.Children.Clear();
+        TipoCocinaTagsLayout.Children.Clear();
+        IngredienteTagsLayout.Children.Clear();
+
+        if (!string.IsNullOrWhiteSpace(EntryComensales.Text))
+            TagsLayout.Children.Add(CrearTag($"Comensales: {EntryComensales.Text.Trim()}", () => EntryComensales.Text = string.Empty));
+
+        if (!string.IsNullOrWhiteSpace(EntryTiempo.Text))
+            TagsLayout.Children.Add(CrearTag($"Tiempo: {EntryTiempo.Text.Trim()}", () => EntryTiempo.Text = string.Empty));
+
+        foreach (var origen in _origenesSeleccionados.ToList())
+        {
+            OrigenTagsLayout.Children.Add(CrearTag(origen, () => QuitarEtiqueta(_origenesSeleccionados, origen)));
+            TagsLayout.Children.Add(CrearTag($"Origen: {origen}", () => QuitarEtiqueta(_origenesSeleccionados, origen)));
+        }
+
+        foreach (var tipo in _tiposCocinaSeleccionados.ToList())
+        {
+            TipoCocinaTagsLayout.Children.Add(CrearTag(tipo, () => QuitarEtiqueta(_tiposCocinaSeleccionados, tipo)));
+            TagsLayout.Children.Add(CrearTag($"Cocina: {tipo}", () => QuitarEtiqueta(_tiposCocinaSeleccionados, tipo)));
+        }
+
+        foreach (var ingrediente in _ingredientesSeleccionados.ToList())
+        {
+            IngredienteTagsLayout.Children.Add(CrearTag(ingrediente, () => QuitarEtiqueta(_ingredientesSeleccionados, ingrediente)));
+            TagsLayout.Children.Add(CrearTag($"Ingrediente: {ingrediente}", () => QuitarEtiqueta(_ingredientesSeleccionados, ingrediente)));
+        }
+    }
+
+    private View CrearTag(string texto, Action quitar)
+    {
+        var tag = new Border
+        {
+            StrokeThickness = 0,
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
+            BackgroundColor = Color.FromArgb("#6A0DAD"),
+            Padding = new Thickness(10, 5),
+            Margin = new Thickness(2),
+            Content = new Label
+            {
+                Text = $"{texto} ✕",
+                TextColor = Colors.White,
+                FontSize = 12
+            }
+        };
+
+        tag.GestureRecognizers.Add(new TapGestureRecognizer
+        {
+            Command = new Command(() =>
+            {
+                quitar?.Invoke();
+                ActualizarTags();
+                OnBuscarClicked(null, null);
+            })
+        });
+
+        return tag;
+    }
+
+    private void QuitarEtiqueta(HashSet<string> origen, string etiqueta)
+    {
+        origen.Remove(etiqueta);
+    }
+
     private void OnBuscarClicked(object sender, EventArgs e)
     {
+        AplicarTextoComoEtiquetaSiProcede();
+
         var baseList = _filtrosPreferenciasActivos
             ? (RecetasFiltradasBase ?? new List<Receta>())
             : (TodasLasRecetas ?? new List<Receta>());
@@ -156,17 +276,23 @@ public partial class HomePage : ContentPage
         if (int.TryParse(EntryComensales.Text?.Trim(), out int comensales))
             resultado = resultado.Where(r => r.Comensales == comensales);
 
-        if (!string.IsNullOrWhiteSpace(EntryOrigen.Text))
-            resultado = resultado.Where(r => r.OrigenDelPlato != null && r.OrigenDelPlato.Contains(EntryOrigen.Text.Trim(), StringComparison.OrdinalIgnoreCase));
-
         if (!string.IsNullOrWhiteSpace(EntryTiempo.Text))
-            resultado = resultado.Where(r => r.TiempoPreparacion != null && r.TiempoPreparacion.Contains(EntryTiempo.Text.Trim(), StringComparison.OrdinalIgnoreCase));
+            resultado = resultado.Where(r => ContieneNormalizado(r.TiempoPreparacion, EntryTiempo.Text));
 
-        if (!string.IsNullOrWhiteSpace(EntryTipoCocina.Text))
-            resultado = resultado.Where(r => r.TipoCocina != null && r.TipoCocina.Contains(EntryTipoCocina.Text.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (_origenesSeleccionados.Count > 0)
+            resultado = resultado.Where(r => _origenesSeleccionados.Any(tag => ContieneNormalizado(r.OrigenDelPlato, tag)));
+        else if (!string.IsNullOrWhiteSpace(EntryOrigen.Text))
+            resultado = resultado.Where(r => ContieneNormalizado(r.OrigenDelPlato, EntryOrigen.Text));
 
-        if (!string.IsNullOrWhiteSpace(EntryIngrediente.Text))
-            resultado = resultado.Where(r => r.IngredientePrincipal != null && r.IngredientePrincipal.Contains(EntryIngrediente.Text.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (_tiposCocinaSeleccionados.Count > 0)
+            resultado = resultado.Where(r => _tiposCocinaSeleccionados.Any(tag => ContieneNormalizado(r.TipoCocina, tag)));
+        else if (!string.IsNullOrWhiteSpace(EntryTipoCocina.Text))
+            resultado = resultado.Where(r => ContieneNormalizado(r.TipoCocina, EntryTipoCocina.Text));
+
+        if (_ingredientesSeleccionados.Count > 0)
+            resultado = resultado.Where(r => _ingredientesSeleccionados.Any(tag => ContieneNormalizado(r.IngredientePrincipal, tag)));
+        else if (!string.IsNullOrWhiteSpace(EntryIngrediente.Text))
+            resultado = resultado.Where(r => ContieneNormalizado(r.IngredientePrincipal, EntryIngrediente.Text));
 
         Recetas.Clear();
         foreach (var r in resultado)
@@ -188,7 +314,6 @@ public partial class HomePage : ContentPage
         OnBuscarClicked(null, null);
     }
 
-    // Carga recetas, creador, imágenes, likes y valoraciones antes de pintar la lista.
     private async Task CargarRecetasAsync()
     {
         if (_estaCargandoRecetas)
@@ -201,32 +326,26 @@ public partial class HomePage : ContentPage
             var api = new DatabaseService();
             int usuarioId = App.UsuarioActual?.Id ?? 0;
 
-            // Limpiamos siempre los estados del usuario anterior.
             _likesUsuario.Clear();
             _usuariosValorados.Clear();
 
-            // Descargar recetas desde MySQL.
             var lista = await api.GetRecetasAsync();
 
             if (lista == null)
                 return;
 
-            // Contador real de likes por receta.
             var likesPorReceta = await api.GetLikesPorRecetaAsync(lista.Select(r => r.Id));
 
-            // Cargar likes y valoraciones SOLO del usuario actual.
             if (usuarioId != 0)
             {
                 try
                 {
                     var likesUsuario = await api.GetLikesUsuarioAsync(usuarioId);
-
                     _likesUsuario = likesUsuario != null
                         ? new HashSet<int>(likesUsuario.Select(l => l.RecetaId))
                         : new HashSet<int>();
 
                     var valoracionesHechas = await api.GetValoracionesPorUsuarioAsync(usuarioId);
-
                     _usuariosValorados = valoracionesHechas != null
                         ? new HashSet<int>(valoracionesHechas.Select(v => v.UsuarioValoradoId))
                         : new HashSet<int>();
@@ -240,56 +359,36 @@ public partial class HomePage : ContentPage
 
             foreach (var r in lista)
             {
-                // Datos del creador.
                 var creador = await api.GetUsuarioByIdAsync(r.UsuarioId);
 
                 r.CreadorNombre = creador?.Nombre ?? "Usuario";
                 r.CreadorFoto = creador?.Foto ?? "user.png";
                 r.CreadorFotoSource = await api.GetImageSourceAsync(r.CreadorFoto, "user.png");
 
-                // Likes totales de la receta.
-                r.Likes = likesPorReceta.TryGetValue(r.Id, out int totalLikes)
-                    ? totalLikes
-                    : 0;
+                r.Likes = likesPorReceta.TryGetValue(r.Id, out int totalLikes) ? totalLikes : 0;
 
-                // MUY IMPORTANTE:
-                // Reiniciar siempre estos valores para no heredar el estado
-                // de la cuenta anterior.
                 r.UsuarioHaDadoLike = false;
                 r.UsuarioHaValorado = false;
 
-                // Estado del usuario actual.
                 if (usuarioId != 0)
                 {
                     r.UsuarioHaDadoLike = _likesUsuario.Contains(r.Id);
                     r.UsuarioHaValorado = _usuariosValorados.Contains(r.UsuarioId);
                 }
 
-                // Imagen de la receta.
                 r.ImagenSource = await api.GetImageSourceAsync(r.Imagen, "recipes.png");
             }
 
             TodasLasRecetas = lista.ToList();
+            RecetasFiltradasBase = App.UsuarioActual != null
+                ? FiltrarPorPreferencias(TodasLasRecetas, App.UsuarioActual)
+                : TodasLasRecetas.ToList();
 
-            // Aplicar filtros por preferencias del usuario actual.
-            if (App.UsuarioActual != null)
-                RecetasFiltradasBase = FiltrarPorPreferencias(TodasLasRecetas, App.UsuarioActual);
-            else
-                RecetasFiltradasBase = TodasLasRecetas.ToList();
-
-            // Pintar recetas.
-            Recetas.Clear();
-
-            foreach (var r in RecetasFiltradasBase)
-                Recetas.Add(r);
+            OnBuscarClicked(null, null);
         }
         catch (Exception ex)
         {
-            await DisplayAlertAsync(
-                "Error",
-                $"No se pudieron cargar las recetas: {ex.Message}",
-                "OK"
-            );
+            await DisplayAlertAsync("Error", $"No se pudieron cargar las recetas: {ex.Message}", "OK");
         }
         finally
         {
@@ -297,10 +396,8 @@ public partial class HomePage : ContentPage
         }
     }
 
-    // Alterna el like de la receta y sincroniza el estado con la tabla Likes.
     private async void LikeClicked(object sender, EventArgs e)
     {
-        // Toggle de like: inserta si no existe, elimina si ya existe y corrige la UI con una re-sincronización defensiva si ocurre un error.
         var api = new DatabaseService();
         var img = (Image)sender;
         var receta = (Receta)img.BindingContext;
@@ -318,25 +415,13 @@ public partial class HomePage : ContentPage
         {
             try
             {
-                await api.PostLikeAsync(new Like
-                {
-                    UsuarioId = usuarioId,
-                    RecetaId = recetaId
-                });
-
+                await api.PostLikeAsync(new Like { UsuarioId = usuarioId, RecetaId = recetaId });
                 receta.UsuarioHaDadoLike = true;
                 receta.Likes++;
                 _likesUsuario.Add(recetaId);
             }
-            catch (HttpRequestException)
-            {
-                // posible conflicto/duplicado: sincronizar desde servidor
-                await SafeRefreshLikes(api, usuarioId);
-                receta.UsuarioHaDadoLike = _likesUsuario.Contains(recetaId);
-            }
             catch
             {
-                // error genérico: refrescar como medida defensiva
                 await SafeRefreshLikes(api, usuarioId);
                 receta.UsuarioHaDadoLike = _likesUsuario.Contains(recetaId);
             }
@@ -346,27 +431,22 @@ public partial class HomePage : ContentPage
             try
             {
                 await api.DeleteLikeAsync(usuarioId, recetaId);
-
                 receta.UsuarioHaDadoLike = false;
                 receta.Likes = Math.Max(0, receta.Likes - 1);
                 _likesUsuario.Remove(recetaId);
             }
             catch
             {
-                // si falla eliminando, re-sincroniza
                 await SafeRefreshLikes(api, usuarioId);
                 receta.UsuarioHaDadoLike = _likesUsuario.Contains(recetaId);
             }
         }
 
-        // Refrescar icono y contador
         img.Source = receta.IconoLike;
     }
 
-    // Abre el popup de estrellas y marca que el usuario ya ha valorado a ese creador.
     private async void PuntuarClicked(object sender, EventArgs e)
     {
-        // Abre el selector de estrellas y guarda la valoración del creador.
         var img = (Image)sender;
         var receta = (Receta)img.BindingContext;
 
@@ -376,7 +456,6 @@ public partial class HomePage : ContentPage
             return;
         }
 
-
         var popup = new StarRatingPopup(receta.UsuarioId);
         var resultado = await this.ShowPopupAsync(popup);
 
@@ -384,13 +463,11 @@ public partial class HomePage : ContentPage
         {
             receta.UsuarioHaValorado = true;
             _usuariosValorados.Add(receta.UsuarioId);
-            img.Source = receta.IconoEstrella; // ← opcional, la UI se refresca sola
+            img.Source = receta.IconoEstrella;
             await DisplayAlertAsync("Gracias", $"Has valorado con {estrellas} estrellas", "OK");
         }
     }
 
-
-    // helper para refrescar likes del servidor sin lanzar excepciones visibles
     private async Task SafeRefreshLikes(DatabaseService api, int usuarioId)
     {
         try
@@ -398,10 +475,7 @@ public partial class HomePage : ContentPage
             var likesFromServer = await api.GetLikesUsuarioAsync(usuarioId);
             _likesUsuario = new HashSet<int>(likesFromServer.Select(l => l.RecetaId));
         }
-        catch
-        {
-            // ignoramos errores en refresh para no bloquear la UI
-        }
+        catch { }
     }
 
     private async void OnRecetaTapped(object sender, EventArgs e)
@@ -413,14 +487,12 @@ public partial class HomePage : ContentPage
         var resultado = await this.ShowPopupAsync(popup);
 
         if (resultado is int[] ids && ids.Length == 2)
-        {
             await Shell.Current.GoToAsync($"recipesteps?recetaId={ids[0]}&usuarioId={ids[1]}");
-        }
     }
 
     private async void InicioClicked(object sender, EventArgs e)
     {
-        CargarRecetasAsync();
+        await CargarRecetasAsync();
         await Shell.Current.GoToAsync("//home");
     }
 
@@ -431,7 +503,6 @@ public partial class HomePage : ContentPage
 
     private async void PerfilClicked(object sender, EventArgs e)
     {
-        // Protege el acceso al perfil: los invitados deben iniciar sesión antes de entrar.
         if (App.UsuarioActual == null)
         {
             bool irLogin = await DisplayAlertAsync(
@@ -442,12 +513,33 @@ public partial class HomePage : ContentPage
             );
 
             if (irLogin)
-            {
                 await Shell.Current.GoToAsync("//login");
-            }
 
             return;
         }
+
         await Shell.Current.GoToAsync("//profile");
+    }
+
+    private static bool ContieneNormalizado(string origen, string busqueda)
+    {
+        if (string.IsNullOrWhiteSpace(origen) || string.IsNullOrWhiteSpace(busqueda))
+            return false;
+
+        return Normalizar(origen).Contains(Normalizar(busqueda), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string Normalizar(string texto)
+    {
+        var normalized = texto.Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder();
+
+        foreach (var c in normalized)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                sb.Append(char.ToLowerInvariant(c));
+        }
+
+        return sb.ToString().Normalize(NormalizationForm.FormC);
     }
 }

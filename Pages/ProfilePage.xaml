@@ -39,6 +39,11 @@
 
                 <HorizontalStackLayout x:Name="EstrellasContainer" Spacing="4" HorizontalOptions="Center" />
 
+                <Label Text="{Binding Puntos, StringFormat='Puntos: {0}'}"
+                       FontSize="16"
+                       TextColor="#666"
+                       HorizontalOptions="Center" />
+
                 <HorizontalStackLayout>
                     <Button Text="Tienda de skins"
                             BackgroundColor="#9C40F7"

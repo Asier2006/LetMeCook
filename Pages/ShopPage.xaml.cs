@@ -4,26 +4,26 @@ using System.Runtime.CompilerServices;
 namespace MiniTFG;
 
 /// <summary>
-/// Gestiona la tienda de fotos y banners canjeables por likes recibidos.
+/// Gestiona la tienda de fotos y banners canjeables por puntos.
 /// </summary>
 public partial class ShopPage : ContentPage, INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler PropertyChanged;
-    protected void OnPropertyChanged(string name)
+    protected void OnPropertyChanged([CallerMemberName] string name = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
-    private int _likesTotales;
+    private int _puntosTotales;
 
-    public int LikesTotales
+    public int PuntosTotales
     {
-        get => _likesTotales;
+        get => _puntosTotales;
         set
         {
-            if (_likesTotales != value)
+            if (_puntosTotales != value)
             {
-                _likesTotales = value;
+                _puntosTotales = value;
                 OnPropertyChanged();
             }
         }
@@ -42,7 +42,7 @@ public partial class ShopPage : ContentPage, INotifyPropertyChanged
     }
 
 
-    // Carga skins, separa banners/fotos, marca compras y calcula likes gastables.
+    // Carga skins, separa banners/fotos, marca compras y calcula puntos gastables.
     private async Task LoadStoreAsync()
     {
         if (App.UsuarioActual == null) return;
@@ -63,16 +63,9 @@ public partial class ShopPage : ContentPage, INotifyPropertyChanged
         foreach (var s in skins)
             s.Comprado = ownedSet.Contains(s.Id);
 
-        // 5. Calcular likes disponibles = recibidos - gastados en skins
-        int totalRecibidos = await api.GetLikesRecibidosUsuarioCountAsync(App.UsuarioActual.Id);
-
-        int gastados = owned
-            .Select(skinId => skins.FirstOrDefault(s => s.Id == skinId))
-            .Where(s => s != null)
-            .Sum(s => s.Precio);
-
-        LikesTotales = Math.Max(0, totalRecibidos - gastados);
-        LikesLabel.Text = $"Likes: {LikesTotales}";
+        // 5. Calcular puntos disponibles. Los puntos se guardan en Usuarios.Puntos.
+        PuntosTotales = await api.GetPuntosUsuarioAsync(App.UsuarioActual.Id);
+        LikesLabel.Text = $"Puntos: {PuntosTotales}";
 
         // 6. Pintar en pantalla
         BannersContainer.Children.Clear();
@@ -97,7 +90,7 @@ public partial class ShopPage : ContentPage, INotifyPropertyChanged
 
         var precio = new Label
         {
-            Text = $"{skin.Precio} likes",
+            Text = $"{skin.Precio} puntos",
             FontSize = 14,
             HorizontalOptions = LayoutOptions.Center
         };
@@ -149,14 +142,14 @@ public partial class ShopPage : ContentPage, INotifyPropertyChanged
         };
     }
 
-    // Comprueba saldo de likes e inserta la compra en UserSkins.
+    // Comprueba saldo de puntos e inserta la compra en UserSkins.
     private async Task ComprarSkinAsync(Skin skin)
     {
-        // Antes de comprar se valida que los likes disponibles cubren el precio.
-        if (LikesTotales < skin.Precio)
+        // Antes de comprar se valida que los puntos disponibles cubren el precio.
+        if (PuntosTotales < skin.Precio)
         {
-            await DisplayAlertAsync("Likes insuficientes", 
-                $"Necesitas {skin.Precio} likes, tienes {LikesTotales}", "OK");
+            await DisplayAlertAsync("Puntos insuficientes", 
+                $"Necesitas {skin.Precio} puntos, tienes {PuntosTotales}", "OK");
             return;
         }
 
@@ -168,10 +161,11 @@ public partial class ShopPage : ContentPage, INotifyPropertyChanged
             skin.Comprado = true;
             
             // Se descuenta localmente para que la UI responda inmediatamente.
-            LikesTotales -= skin.Precio;
-            LikesLabel.Text = $"Likes: {LikesTotales}";
+            await api.SumarPuntosUsuarioAsync(App.UsuarioActual.Id, -skin.Precio);
+            PuntosTotales = await api.GetPuntosUsuarioAsync(App.UsuarioActual.Id);
+            LikesLabel.Text = $"Puntos: {PuntosTotales}";
             
-            await DisplayAlertAsync("Comprado", $"Has comprado {skin.Nombre}. Te quedan {LikesTotales} likes.", "OK");
+            await DisplayAlertAsync("Comprado", $"Has comprado {skin.Nombre}. Te quedan {PuntosTotales} puntos.", "OK");
             
             // La próxima entrada en tienda volverá a recalcular el saldo desde MySQL.
         }

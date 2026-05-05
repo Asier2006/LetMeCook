@@ -80,6 +80,9 @@
 	  <MauiXaml Update="Pages\LoginPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Pages\LetMeCookPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Pages\NamePage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

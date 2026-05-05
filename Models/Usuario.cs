@@ -32,5 +32,8 @@ namespace MiniTFG
         // Datos calculados al leer usuarios: no son introducidos manualmente por el usuario.
         public double ValoracionMedia { get; set; }
         public int NumeroValoraciones { get; set; }
+
+        // Puntos gastables en tienda y obtenidos por actividad: likes, campos opcionales y vídeos.
+        public int Puntos { get; set; }
     }
 }

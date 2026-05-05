@@ -353,13 +353,31 @@ namespace MiniTFG
         {
             await using var conn = Connect();
             await conn.OpenAsync();
-            var sql = @"INSERT IGNORE INTO Likes (UsuarioId, RecetaId)
-                        VALUES (@UsuarioId, @RecetaId);
-                        SELECT LAST_INSERT_ID();";
-            await using var cmd = new MySqlCommand(sql, conn);
-            cmd.Parameters.AddWithValue("@UsuarioId", like.UsuarioId);
-            cmd.Parameters.AddWithValue("@RecetaId",  like.RecetaId);
-            like.Id = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+            await EnsurePuntosColumnAsync(conn);
+
+            // INSERT IGNORE evita duplicados. Solo si se inserta una fila nueva se suman puntos al creador.
+            await using var insert = new MySqlCommand(
+                "INSERT IGNORE INTO Likes (UsuarioId, RecetaId) VALUES (@UsuarioId, @RecetaId)", conn);
+            insert.Parameters.AddWithValue("@UsuarioId", like.UsuarioId);
+            insert.Parameters.AddWithValue("@RecetaId", like.RecetaId);
+            int filasInsertadas = await insert.ExecuteNonQueryAsync();
+
+            await using var select = new MySqlCommand(
+                "SELECT Id FROM Likes WHERE UsuarioId=@UsuarioId AND RecetaId=@RecetaId LIMIT 1", conn);
+            select.Parameters.AddWithValue("@UsuarioId", like.UsuarioId);
+            select.Parameters.AddWithValue("@RecetaId", like.RecetaId);
+            var id = await select.ExecuteScalarAsync();
+            like.Id = id == null || id == DBNull.Value ? 0 : Convert.ToInt32(id);
+
+            if (filasInsertadas > 0)
+            {
+                int creadorId = await GetUsuarioIdDeRecetaAsync(conn, like.RecetaId);
+
+                // Dar like a tu propia receta no genera puntos.
+                if (creadorId > 0 && creadorId != like.UsuarioId)
+                    await SumarPuntosUsuarioAsync(conn, creadorId, 10);
+            }
+
             return like;
         }
 
@@ -386,11 +404,21 @@ namespace MiniTFG
         {
             await using var conn = Connect();
             await conn.OpenAsync();
+            await EnsurePuntosColumnAsync(conn);
+
+            int creadorId = await GetUsuarioIdDeRecetaAsync(conn, recetaId);
+
             await using var cmd = new MySqlCommand(
                 "DELETE FROM Likes WHERE UsuarioId=@uid AND RecetaId=@rid", conn);
             cmd.Parameters.AddWithValue("@uid", usuarioId);
             cmd.Parameters.AddWithValue("@rid", recetaId);
-            return await cmd.ExecuteNonQueryAsync() > 0;
+            bool eliminado = await cmd.ExecuteNonQueryAsync() > 0;
+
+            // Si se retira el like, se retiran también los 10 puntos que generó.
+            if (eliminado && creadorId > 0 && creadorId != usuarioId)
+                await SumarPuntosUsuarioAsync(conn, creadorId, -10);
+
+            return eliminado;
         }
 
         public async Task<Dictionary<int, int>> GetLikesPorRecetaAsync(IEnumerable<int> recetaIds)
@@ -504,6 +532,308 @@ namespace MiniTFG
 
 
 
+        //  CATÁLOGOS / ETIQUETAS / PUNTOS
+
+        /// <summary>
+        /// Crea, si no existen, las tablas nuevas de etiquetas y la columna de puntos.
+        /// Esto permite que el proyecto siga funcionando aunque la base no se haya actualizado manualmente todavía.
+        /// </summary>
+        public async Task EnsureCatalogosAsync()
+        {
+            await using var conn = Connect();
+            await conn.OpenAsync();
+
+            await EnsurePuntosColumnAsync(conn);
+
+            var ddl = new[]
+            {
+                @"CREATE TABLE IF NOT EXISTS TiposCocina (
+                    Id INT NOT NULL AUTO_INCREMENT,
+                    Nombre VARCHAR(100) NOT NULL,
+                    PRIMARY KEY (Id),
+                    UNIQUE KEY uq_tipos_cocina_nombre (Nombre)
+                  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+                @"CREATE TABLE IF NOT EXISTS OrigenesPlato (
+                    Id INT NOT NULL AUTO_INCREMENT,
+                    Nombre VARCHAR(100) NOT NULL,
+                    PRIMARY KEY (Id),
+                    UNIQUE KEY uq_origenes_plato_nombre (Nombre)
+                  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+                @"CREATE TABLE IF NOT EXISTS Ingredientes (
+                    Id INT NOT NULL AUTO_INCREMENT,
+                    Nombre VARCHAR(150) NOT NULL,
+                    PRIMARY KEY (Id),
+                    UNIQUE KEY uq_ingredientes_nombre (Nombre)
+                  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+                @"CREATE TABLE IF NOT EXISTS RecetaTiposCocina (
+                    RecetaId INT NOT NULL,
+                    TipoCocinaId INT NOT NULL,
+                    PRIMARY KEY (RecetaId, TipoCocinaId),
+                    CONSTRAINT fk_receta_tipos_receta FOREIGN KEY (RecetaId) REFERENCES Recetas(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+                    CONSTRAINT fk_receta_tipos_tipo FOREIGN KEY (TipoCocinaId) REFERENCES TiposCocina(Id) ON DELETE CASCADE ON UPDATE CASCADE
+                  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+                @"CREATE TABLE IF NOT EXISTS RecetaOrigenes (
+                    RecetaId INT NOT NULL,
+                    OrigenId INT NOT NULL,
+                    PRIMARY KEY (RecetaId, OrigenId),
+                    CONSTRAINT fk_receta_origenes_receta FOREIGN KEY (RecetaId) REFERENCES Recetas(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+                    CONSTRAINT fk_receta_origenes_origen FOREIGN KEY (OrigenId) REFERENCES OrigenesPlato(Id) ON DELETE CASCADE ON UPDATE CASCADE
+                  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+                @"CREATE TABLE IF NOT EXISTS RecetaIngredientes (
+                    RecetaId INT NOT NULL,
+                    IngredienteId INT NOT NULL,
+                    PRIMARY KEY (RecetaId, IngredienteId),
+                    CONSTRAINT fk_receta_ingredientes_receta FOREIGN KEY (RecetaId) REFERENCES Recetas(Id) ON DELETE CASCADE ON UPDATE CASCADE,
+                    CONSTRAINT fk_receta_ingredientes_ingrediente FOREIGN KEY (IngredienteId) REFERENCES Ingredientes(Id) ON DELETE CASCADE ON UPDATE CASCADE
+                  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+            };
+
+            foreach (var sql in ddl)
+            {
+                await using var cmd = new MySqlCommand(sql, conn);
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            await InsertCatalogoDefaultsAsync(conn, "TiposCocina", new[]
+            {
+                "Vitro", "Horno", "Microondas", "Fuego", "Airfryer", "Parrilla", "Vapor", "Olla"
+            });
+
+            await InsertCatalogoDefaultsAsync(conn, "OrigenesPlato", new[]
+            {
+                "España", "Italia", "Francia", "México", "Japón", "China", "India", "Estados Unidos", "Marruecos"
+            });
+
+            await InsertCatalogoDefaultsAsync(conn, "Ingredientes", new[]
+            {
+                "Pollo", "Ternera", "Cerdo", "Pescado", "Huevo", "Arroz", "Pasta", "Patata", "Tomate", "Manzana", "Queso", "Lechuga"
+            });
+        }
+
+        public async Task<List<string>> GetTiposCocinaAsync()
+        {
+            await EnsureCatalogosAsync();
+            return await GetCatalogoAsync("TiposCocina");
+        }
+
+        public async Task<List<string>> GetOrigenesPlatoAsync()
+        {
+            await EnsureCatalogosAsync();
+            return await GetCatalogoAsync("OrigenesPlato");
+        }
+
+        public async Task<List<string>> GetIngredientesAsync()
+        {
+            await EnsureCatalogosAsync();
+            return await GetCatalogoAsync("Ingredientes");
+        }
+
+        public async Task GuardarEtiquetasRecetaAsync(
+            int recetaId,
+            IEnumerable<string> origenes,
+            IEnumerable<string> tiposCocina,
+            IEnumerable<string> ingredientes)
+        {
+            await EnsureCatalogosAsync();
+
+            await using var conn = Connect();
+            await conn.OpenAsync();
+            await using var tx = await conn.BeginTransactionAsync();
+            var mysqlTx = tx as MySqlTransaction ?? throw new InvalidOperationException("No se pudo iniciar la transacción MySQL.");
+
+            try
+            {
+                await GuardarRelacionEtiquetasAsync(conn, mysqlTx, recetaId, "OrigenesPlato", "RecetaOrigenes", "OrigenId", origenes);
+                await GuardarRelacionEtiquetasAsync(conn, mysqlTx, recetaId, "TiposCocina", "RecetaTiposCocina", "TipoCocinaId", tiposCocina);
+                await GuardarRelacionEtiquetasAsync(conn, mysqlTx, recetaId, "Ingredientes", "RecetaIngredientes", "IngredienteId", ingredientes);
+
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<int> SumarPuntosUsuarioAsync(int usuarioId, int puntos)
+        {
+            await using var conn = Connect();
+            await conn.OpenAsync();
+            await EnsurePuntosColumnAsync(conn);
+            await SumarPuntosUsuarioAsync(conn, usuarioId, puntos);
+            return await GetPuntosUsuarioAsync(conn, usuarioId);
+        }
+
+        public async Task<int> GetPuntosUsuarioAsync(int usuarioId)
+        {
+            await using var conn = Connect();
+            await conn.OpenAsync();
+            await EnsurePuntosColumnAsync(conn);
+            return await GetPuntosUsuarioAsync(conn, usuarioId);
+        }
+
+        private async Task<List<string>> GetCatalogoAsync(string tabla)
+        {
+            tabla = ValidarTablaCatalogo(tabla);
+
+            var list = new List<string>();
+            await using var conn = Connect();
+            await conn.OpenAsync();
+            await using var cmd = new MySqlCommand($"SELECT Nombre FROM {tabla} ORDER BY Nombre", conn);
+            await using var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+                list.Add(reader.GetString("Nombre"));
+
+            return list;
+        }
+
+        private static string ValidarTablaCatalogo(string tabla) => tabla switch
+        {
+            "TiposCocina" => "TiposCocina",
+            "OrigenesPlato" => "OrigenesPlato",
+            "Ingredientes" => "Ingredientes",
+            _ => throw new ArgumentException("Tabla de catálogo no permitida", nameof(tabla))
+        };
+
+        private static async Task InsertCatalogoDefaultsAsync(MySqlConnection conn, string tabla, IEnumerable<string> valores)
+        {
+            tabla = ValidarTablaCatalogo(tabla);
+
+            foreach (var valor in valores.Select(v => v?.Trim()).Where(v => !string.IsNullOrWhiteSpace(v)).Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                await using var cmd = new MySqlCommand($"INSERT IGNORE INTO {tabla} (Nombre) VALUES (@nombre)", conn);
+                cmd.Parameters.AddWithValue("@nombre", valor);
+                await cmd.ExecuteNonQueryAsync();
+            }
+        }
+
+        private static async Task<int> EnsureCatalogValueAsync(MySqlConnection conn, MySqlTransaction tx, string tabla, string nombre)
+        {
+            tabla = ValidarTablaCatalogo(tabla);
+            nombre = nombre?.Trim();
+
+            if (string.IsNullOrWhiteSpace(nombre))
+                return 0;
+
+            await using (var insert = new MySqlCommand($"INSERT IGNORE INTO {tabla} (Nombre) VALUES (@nombre)", conn, tx))
+            {
+                insert.Parameters.AddWithValue("@nombre", nombre);
+                await insert.ExecuteNonQueryAsync();
+            }
+
+            await using var select = new MySqlCommand($"SELECT Id FROM {tabla} WHERE Nombre=@nombre LIMIT 1", conn, tx);
+            select.Parameters.AddWithValue("@nombre", nombre);
+            return Convert.ToInt32(await select.ExecuteScalarAsync());
+        }
+
+        private static async Task GuardarRelacionEtiquetasAsync(
+            MySqlConnection conn,
+            MySqlTransaction tx,
+            int recetaId,
+            string tablaCatalogo,
+            string tablaRelacion,
+            string columnaRelacion,
+            IEnumerable<string> etiquetas)
+        {
+            tablaCatalogo = ValidarTablaCatalogo(tablaCatalogo);
+
+            var relacionPermitida = (tablaRelacion, columnaRelacion) switch
+            {
+                ("RecetaOrigenes", "OrigenId") => true,
+                ("RecetaTiposCocina", "TipoCocinaId") => true,
+                ("RecetaIngredientes", "IngredienteId") => true,
+                _ => false
+            };
+
+            if (!relacionPermitida)
+                throw new ArgumentException("Relación de etiquetas no permitida");
+
+            await using (var delete = new MySqlCommand($"DELETE FROM {tablaRelacion} WHERE RecetaId=@recetaId", conn, tx))
+            {
+                delete.Parameters.AddWithValue("@recetaId", recetaId);
+                await delete.ExecuteNonQueryAsync();
+            }
+
+            foreach (var etiqueta in NormalizarEtiquetas(etiquetas))
+            {
+                int etiquetaId = await EnsureCatalogValueAsync(conn, tx, tablaCatalogo, etiqueta);
+
+                if (etiquetaId <= 0)
+                    continue;
+
+                await using var insert = new MySqlCommand(
+                    $"INSERT IGNORE INTO {tablaRelacion} (RecetaId, {columnaRelacion}) VALUES (@recetaId, @etiquetaId)", conn, tx);
+                insert.Parameters.AddWithValue("@recetaId", recetaId);
+                insert.Parameters.AddWithValue("@etiquetaId", etiquetaId);
+                await insert.ExecuteNonQueryAsync();
+            }
+        }
+
+        private static IEnumerable<string> NormalizarEtiquetas(IEnumerable<string> etiquetas)
+        {
+            return (etiquetas ?? Enumerable.Empty<string>())
+                .Select(e => e?.Trim())
+                .Where(e => !string.IsNullOrWhiteSpace(e))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static async Task EnsurePuntosColumnAsync(MySqlConnection conn)
+        {
+            await using var exists = new MySqlCommand(
+                @"SELECT COUNT(*)
+                  FROM INFORMATION_SCHEMA.COLUMNS
+                  WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = 'Usuarios'
+                    AND COLUMN_NAME = 'Puntos'", conn);
+
+            bool tieneColumna = Convert.ToInt32(await exists.ExecuteScalarAsync()) > 0;
+
+            if (!tieneColumna)
+            {
+                await using var alter = new MySqlCommand(
+                    "ALTER TABLE Usuarios ADD COLUMN Puntos INT NOT NULL DEFAULT 0", conn);
+                await alter.ExecuteNonQueryAsync();
+            }
+        }
+
+        private static async Task<int> GetUsuarioIdDeRecetaAsync(MySqlConnection conn, int recetaId)
+        {
+            await using var cmd = new MySqlCommand("SELECT UsuarioId FROM Recetas WHERE Id=@recetaId LIMIT 1", conn);
+            cmd.Parameters.AddWithValue("@recetaId", recetaId);
+            var result = await cmd.ExecuteScalarAsync();
+            return result == null || result == DBNull.Value ? 0 : Convert.ToInt32(result);
+        }
+
+        private static async Task SumarPuntosUsuarioAsync(MySqlConnection conn, int usuarioId, int puntos)
+        {
+            if (usuarioId <= 0 || puntos == 0)
+                return;
+
+            await using var cmd = new MySqlCommand(
+                "UPDATE Usuarios SET Puntos = GREATEST(0, Puntos + @puntos) WHERE Id=@usuarioId", conn);
+            cmd.Parameters.AddWithValue("@puntos", puntos);
+            cmd.Parameters.AddWithValue("@usuarioId", usuarioId);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        private static async Task<int> GetPuntosUsuarioAsync(MySqlConnection conn, int usuarioId)
+        {
+            await using var cmd = new MySqlCommand("SELECT Puntos FROM Usuarios WHERE Id=@usuarioId", conn);
+            cmd.Parameters.AddWithValue("@usuarioId", usuarioId);
+            var result = await cmd.ExecuteScalarAsync();
+            return result == null || result == DBNull.Value ? 0 : Convert.ToInt32(result);
+        }
+
+
+
+
 
         //  SKINS
 
@@ -608,6 +938,17 @@ namespace MiniTFG
 
         //  HELPERS — mappers y parámetros
 
+        private static bool HasColumn(MySqlDataReader reader, string columnName)
+        {
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                if (string.Equals(reader.GetName(i), columnName, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
         private static Usuario MapUsuario(MySqlDataReader r) => new Usuario
         {
             Id                 = r.GetInt32("Id"),
@@ -633,7 +974,8 @@ namespace MiniTFG
             Vegano             = r.GetBoolean("Vegano"),
             Vegetariano        = r.GetBoolean("Vegetariano"),
             ValoracionMedia    = r.IsDBNull(r.GetOrdinal("ValoracionMedia"))    ? 0 : r.GetDouble("ValoracionMedia"),
-            NumeroValoraciones = r.IsDBNull(r.GetOrdinal("NumeroValoraciones")) ? 0 : r.GetInt32("NumeroValoraciones")
+            NumeroValoraciones = r.IsDBNull(r.GetOrdinal("NumeroValoraciones")) ? 0 : r.GetInt32("NumeroValoraciones"),
+            Puntos             = HasColumn(r, "Puntos") && !r.IsDBNull(r.GetOrdinal("Puntos")) ? r.GetInt32("Puntos") : 0
         };
 
         private static Receta MapReceta(MySqlDataReader r) => new Receta

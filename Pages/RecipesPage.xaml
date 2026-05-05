@@ -1,62 +1,117 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Vista comentada: Vista de creación de receta con formulario, imagen, pasos y vídeos. -->
+<!-- Vista de creación básica de receta. Los pasos/vídeos se crean en la opción avanzada Let me Cook. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MiniTFG.RecipesPage">
 
     <Grid RowDefinitions="*, Auto">
         <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="20" Spacing="20">
+            <VerticalStackLayout Padding="20" Spacing="16">
                 <Label Text="Crear nueva receta"
-                   FontSize="28"
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center" />
+                       FontSize="28"
+                       FontAttributes="Bold"
+                       HorizontalOptions="Center" />
+
+                <Label Text="Campos obligatorios" FontAttributes="Bold" TextColor="#9C40F7" FontSize="18" />
 
                 <Entry x:Name="NombreEntry"
-                       Placeholder="Nombre del plato"
+                       Placeholder="Nombre del plato *"
                        FontSize="18" />
 
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="Imagen del plato" FontAttributes="Bold" FontSize="18" />
-                    <Image x:Name="ImagenPreview"
+                <Editor x:Name="DescripcionEntry"
+                        Placeholder="Descripción del plato *"
+                        FontSize="18"
+                        AutoSize="TextChanges"
+                        HeightRequest="110" />
+
+                <Entry x:Name="ComensalesEntry"
+                       Placeholder="Comensales *"
+                       FontSize="18"
+                       Keyboard="Numeric" />
+
+                <Label Text="Imagen del plato" FontAttributes="Bold" FontSize="18" />
+                <Image x:Name="ImagenPreview"
                        HeightRequest="180"
                        BackgroundColor="#DDDDDD"
                        Aspect="AspectFill" />
-                    <Button Text="Seleccionar imagen"
-                            BackgroundColor="#9C40F7"
-                            Clicked="SeleccionarImagenClicked" />
-                </VerticalStackLayout>
+                <Button Text="Seleccionar imagen (+1 punto)"
+                        BackgroundColor="#9C40F7"
+                        TextColor="White"
+                        CornerRadius="10"
+                        Clicked="SeleccionarImagenClicked" />
 
-                <Entry x:Name="DescripcionEntry"
-                       Placeholder="Descripción del plato"
-                       FontSize="18" />
-
-                <Entry x:Name="ComensalesEntry"
-                       Placeholder="Comensales (ej: 4)"
-                       FontSize="18"
-                       Keyboard="Numeric" />
+                <Label Text="Campos opcionales (+1 punto cada bloque rellenado)" FontAttributes="Bold" TextColor="#4CAF50" FontSize="18" />
 
                 <Entry x:Name="TiempoEntry"
-                       Placeholder="Tiempo (minutos)"
+                       Placeholder="Tiempo de preparación en minutos (+1)"
                        FontSize="18"
                        Keyboard="Numeric" />
 
-                <Picker x:Name="CocinaPicker" Title="Tipo de cocina" FontSize="18">
-                    <Picker.Items>
-                        <x:String>Vitro</x:String>
-                        <x:String>Horno</x:String>
-                        <x:String>Microondas</x:String>
-                        <x:String>Fuego</x:String>
-                    </Picker.Items>
-                </Picker>
-
+                <Label Text="Origen / nacionalidad (+1)" FontAttributes="Bold" />
                 <Entry x:Name="OrigenEntry"
-                       Placeholder="Origen del plato (ej: Italia)"
-                       FontSize="18" />
+                       Placeholder="Buscar origen: es → España"
+                       FontSize="18"
+                       TextChanged="OnOrigenTextChanged" />
+                <FlexLayout x:Name="OrigenTagsLayout" Wrap="Wrap" Direction="Row" />
+                <CollectionView ItemsSource="{Binding OrigenSugerencias}" HeightRequest="70" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border StrokeThickness="0" StrokeShape="RoundRectangle 12" BackgroundColor="#6A0DAD" Padding="10,5" Margin="3">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnOrigenSugerenciaTapped" />
+                                </Border.GestureRecognizers>
+                                <Label Text="{Binding .}" TextColor="White" FontSize="12" />
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
 
-                <Entry x:Name="MainIngredientEntry"
-                       Placeholder="Ingrediente principal (ej: Pollo)"
-                       FontSize="18" />
+                <Label Text="Tipo de cocina (+1)" FontAttributes="Bold" />
+                <Entry x:Name="TipoCocinaEntry"
+                       Placeholder="Buscar tipo: hor → Horno"
+                       FontSize="18"
+                       TextChanged="OnTipoCocinaTextChanged" />
+                <FlexLayout x:Name="TipoCocinaTagsLayout" Wrap="Wrap" Direction="Row" />
+                <CollectionView ItemsSource="{Binding TipoCocinaSugerencias}" HeightRequest="70" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border StrokeThickness="0" StrokeShape="RoundRectangle 12" BackgroundColor="#6A0DAD" Padding="10,5" Margin="3">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnTipoCocinaSugerenciaTapped" />
+                                </Border.GestureRecognizers>
+                                <Label Text="{Binding .}" TextColor="White" FontSize="12" />
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Label Text="Ingredientes (+1)" FontAttributes="Bold" />
+                <Entry x:Name="IngredienteEntry"
+                       Placeholder="Buscar ingrediente: man → Manzana"
+                       FontSize="18"
+                       TextChanged="OnIngredienteTextChanged" />
+                <FlexLayout x:Name="IngredienteTagsLayout" Wrap="Wrap" Direction="Row" />
+                <CollectionView ItemsSource="{Binding IngredienteSugerencias}" HeightRequest="70" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border StrokeThickness="0" StrokeShape="RoundRectangle 12" BackgroundColor="#6A0DAD" Padding="10,5" Margin="3">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnIngredienteSugerenciaTapped" />
+                                </Border.GestureRecognizers>
+                                <Label Text="{Binding .}" TextColor="White" FontSize="12" />
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
 
                 <Label Text="¿Contiene este alérgeno?" FontAttributes="Bold" VerticalOptions="Center" FontSize="18" />
                 <CollectionView ItemsSource="{Binding Alergenos}">
@@ -82,22 +137,24 @@
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
-                <Label Text="Pasos de la receta (vídeos)" FontAttributes="Bold" FontSize="18" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <Button Text="Crear"
+                            Grid.Column="0"
+                            BackgroundColor="#555"
+                            TextColor="White"
+                            CornerRadius="10"
+                            HeightRequest="50"
+                            Clicked="GuardarRecetaClicked" />
 
-                <VerticalStackLayout x:Name="PasosContainer" Spacing="10" />
-
-                <Button Text="Añadir paso"
-                        BackgroundColor="#7A1CCF"
-                        TextColor="White"
-                        CornerRadius="10"
-                        Clicked="AgregarPasoClicked" />
-
-                <Button Text="Guardar receta"
-                        BackgroundColor="#9C40F7"
-                        TextColor="White"
-                        CornerRadius="10"
-                        HeightRequest="50"
-                        Clicked="GuardarRecetaClicked" />
+                    <Button Text="Let me Cook"
+                            Grid.Column="1"
+                            BackgroundColor="#9C40F7"
+                            TextColor="White"
+                            CornerRadius="10"
+                            HeightRequest="50"
+                            FontAttributes="Bold"
+                            Clicked="LetMeCookClicked" />
+                </Grid>
             </VerticalStackLayout>
         </ScrollView>
 

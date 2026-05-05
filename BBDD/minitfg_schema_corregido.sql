@@ -49,6 +49,10 @@ CREATE TABLE Usuarios (
     ValoracionMedia     DOUBLE          NOT NULL DEFAULT 0,
     NumeroValoraciones  INT             NOT NULL DEFAULT 0,
 
+    -- Puntos gastables en tienda.
+    -- +10 por like recibido, +1 por bloques opcionales, +2 por descripciones de pasos y +3 por vídeo.
+    Puntos              INT             NOT NULL DEFAULT 0,
+
     PRIMARY KEY (Id),
     UNIQUE KEY uq_usuarios_correo (Correo),
     INDEX ix_usuarios_nombre (Nombre)
@@ -132,6 +136,76 @@ CREATE TABLE Recetas (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
+-- Catálogos de búsqueda por etiquetas
+-- TiposCocina, OrigenesPlato e Ingredientes alimentan los buscadores
+-- con lógica contains. Las tablas N:M permiten que una receta tenga varias
+-- etiquetas por categoría, aunque también se mantiene el texto resumen
+-- en Recetas.TipoCocina, Recetas.OrigenDelPlato e Recetas.IngredientePrincipal.
+-- ---------------------------------------------------------------------
+CREATE TABLE TiposCocina (
+    Id      INT             NOT NULL AUTO_INCREMENT,
+    Nombre  VARCHAR(100)    NOT NULL,
+
+    PRIMARY KEY (Id),
+    UNIQUE KEY uq_tipos_cocina_nombre (Nombre)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE OrigenesPlato (
+    Id      INT             NOT NULL AUTO_INCREMENT,
+    Nombre  VARCHAR(100)    NOT NULL,
+
+    PRIMARY KEY (Id),
+    UNIQUE KEY uq_origenes_plato_nombre (Nombre)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE Ingredientes (
+    Id      INT             NOT NULL AUTO_INCREMENT,
+    Nombre  VARCHAR(150)    NOT NULL,
+
+    PRIMARY KEY (Id),
+    UNIQUE KEY uq_ingredientes_nombre (Nombre)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE RecetaTiposCocina (
+    RecetaId      INT NOT NULL,
+    TipoCocinaId  INT NOT NULL,
+
+    PRIMARY KEY (RecetaId, TipoCocinaId),
+    CONSTRAINT fk_receta_tipos_receta
+        FOREIGN KEY (RecetaId) REFERENCES Recetas(Id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_receta_tipos_tipo
+        FOREIGN KEY (TipoCocinaId) REFERENCES TiposCocina(Id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE RecetaOrigenes (
+    RecetaId   INT NOT NULL,
+    OrigenId   INT NOT NULL,
+
+    PRIMARY KEY (RecetaId, OrigenId),
+    CONSTRAINT fk_receta_origenes_receta
+        FOREIGN KEY (RecetaId) REFERENCES Recetas(Id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_receta_origenes_origen
+        FOREIGN KEY (OrigenId) REFERENCES OrigenesPlato(Id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE RecetaIngredientes (
+    RecetaId       INT NOT NULL,
+    IngredienteId  INT NOT NULL,
+
+    PRIMARY KEY (RecetaId, IngredienteId),
+    CONSTRAINT fk_receta_ingredientes_receta
+        FOREIGN KEY (RecetaId) REFERENCES Recetas(Id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_receta_ingredientes_ingrediente
+        FOREIGN KEY (IngredienteId) REFERENCES Ingredientes(Id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
 -- PasosReceta
 -- Cada receta puede tener varios pasos. Video es Base64 opcional.
 -- ---------------------------------------------------------------------
@@ -196,6 +270,18 @@ CREATE TABLE Valoraciones (
     CONSTRAINT chk_valoraciones_puntuacion
         CHECK (Puntuacion BETWEEN 1 AND 5)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- Datos iniciales de catálogos
+-- ---------------------------------------------------------------------
+INSERT INTO TiposCocina (Nombre) VALUES
+('Vitro'), ('Horno'), ('Microondas'), ('Fuego'), ('Airfryer'), ('Parrilla'), ('Vapor'), ('Olla');
+
+INSERT INTO OrigenesPlato (Nombre) VALUES
+('España'), ('Italia'), ('Francia'), ('México'), ('Japón'), ('China'), ('India'), ('Estados Unidos'), ('Marruecos');
+
+INSERT INTO Ingredientes (Nombre) VALUES
+('Pollo'), ('Ternera'), ('Cerdo'), ('Pescado'), ('Huevo'), ('Arroz'), ('Pasta'), ('Patata'), ('Tomate'), ('Manzana'), ('Queso'), ('Lechuga');
 
 -- ---------------------------------------------------------------------
 -- Datos iniciales de la tienda

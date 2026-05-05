@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Vista comentada: Vista principal con listado de recetas, filtros, likes y valoración. -->
+<!-- Vista principal con listado de recetas, buscador por filtros, etiquetas seleccionables, likes y valoración. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MiniTFG.HomePage">
@@ -10,7 +10,6 @@
                               Padding="10"
                               Grid.Row="0">
 
-            <!-- Botón para expandir/colapsar filtros -->
             <Border StrokeThickness="0"
                     StrokeShape="RoundRectangle 20"
                     BackgroundColor="#7A1CCF"
@@ -26,31 +25,20 @@
                        Padding="15,0" />
             </Border>
 
-            <!-- Panel de filtros (oculto por defecto) -->
             <VerticalStackLayout x:Name="PanelFiltros" IsVisible="False" Spacing="8" Padding="5,10">
 
-                <!-- Etiquetas de filtros activos -->
                 <FlexLayout x:Name="TagsLayout"
                             Wrap="Wrap"
                             Direction="Row"
                             JustifyContent="Start"
                             AlignItems="Center" />
 
-                <!-- Campos de filtro -->
                 <Border StrokeThickness="0" StrokeShape="RoundRectangle 10" BackgroundColor="#7A1CCF" Padding="5">
                     <Entry x:Name="EntryComensales"
                            Placeholder="Comensales"
                            PlaceholderColor="#CCA0F0"
                            TextColor="White"
                            Keyboard="Numeric"
-                           Completed="OnFiltroEntryCompleted" />
-                </Border>
-
-                <Border StrokeThickness="0" StrokeShape="RoundRectangle 10" BackgroundColor="#7A1CCF" Padding="5">
-                    <Entry x:Name="EntryOrigen"
-                           Placeholder="Origen del plato"
-                           PlaceholderColor="#CCA0F0"
-                           TextColor="White"
                            Completed="OnFiltroEntryCompleted" />
                 </Border>
 
@@ -63,23 +51,84 @@
                            Completed="OnFiltroEntryCompleted" />
                 </Border>
 
+                <Label Text="Origen / nacionalidad" TextColor="White" FontAttributes="Bold" />
+                <Border StrokeThickness="0" StrokeShape="RoundRectangle 10" BackgroundColor="#7A1CCF" Padding="5">
+                    <Entry x:Name="EntryOrigen"
+                           Placeholder="Buscar origen: es → España"
+                           PlaceholderColor="#CCA0F0"
+                           TextColor="White"
+                           TextChanged="OnOrigenTextChanged"
+                           Completed="OnFiltroEntryCompleted" />
+                </Border>
+                <FlexLayout x:Name="OrigenTagsLayout" Wrap="Wrap" Direction="Row" />
+                <CollectionView ItemsSource="{Binding OrigenSugerencias}" HeightRequest="70" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border StrokeThickness="0" StrokeShape="RoundRectangle 12" BackgroundColor="#6A0DAD" Padding="10,5" Margin="3">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnOrigenSugerenciaTapped" />
+                                </Border.GestureRecognizers>
+                                <Label Text="{Binding .}" TextColor="White" FontSize="12" />
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Label Text="Tipo de cocina" TextColor="White" FontAttributes="Bold" />
                 <Border StrokeThickness="0" StrokeShape="RoundRectangle 10" BackgroundColor="#7A1CCF" Padding="5">
                     <Entry x:Name="EntryTipoCocina"
-                           Placeholder="Tipo de cocina"
+                           Placeholder="Buscar tipo: hor → Horno"
                            PlaceholderColor="#CCA0F0"
                            TextColor="White"
+                           TextChanged="OnTipoCocinaTextChanged"
                            Completed="OnFiltroEntryCompleted" />
                 </Border>
+                <FlexLayout x:Name="TipoCocinaTagsLayout" Wrap="Wrap" Direction="Row" />
+                <CollectionView ItemsSource="{Binding TipoCocinaSugerencias}" HeightRequest="70" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border StrokeThickness="0" StrokeShape="RoundRectangle 12" BackgroundColor="#6A0DAD" Padding="10,5" Margin="3">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnTipoCocinaSugerenciaTapped" />
+                                </Border.GestureRecognizers>
+                                <Label Text="{Binding .}" TextColor="White" FontSize="12" />
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
 
+                <Label Text="Ingredientes" TextColor="White" FontAttributes="Bold" />
                 <Border StrokeThickness="0" StrokeShape="RoundRectangle 10" BackgroundColor="#7A1CCF" Padding="5">
                     <Entry x:Name="EntryIngrediente"
-                           Placeholder="Ingrediente principal"
+                           Placeholder="Buscar ingrediente: man → Manzana"
                            PlaceholderColor="#CCA0F0"
                            TextColor="White"
+                           TextChanged="OnIngredienteTextChanged"
                            Completed="OnFiltroEntryCompleted" />
                 </Border>
+                <FlexLayout x:Name="IngredienteTagsLayout" Wrap="Wrap" Direction="Row" />
+                <CollectionView ItemsSource="{Binding IngredienteSugerencias}" HeightRequest="70" SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border StrokeThickness="0" StrokeShape="RoundRectangle 12" BackgroundColor="#6A0DAD" Padding="10,5" Margin="3">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnIngredienteSugerenciaTapped" />
+                                </Border.GestureRecognizers>
+                                <Label Text="{Binding .}" TextColor="White" FontSize="12" />
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
 
-                <!-- Botones -->
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,5,0,0">
                     <Button Text="Buscar"
                             BackgroundColor="#6A0DAD"
@@ -133,10 +182,9 @@
                                 <Label Text="{Binding TiempoPreparacion, StringFormat='Tiempo: {0} min'}" TextColor="White" />
                                 <Label Text="{Binding TipoCocina, StringFormat='Cocina: {0}'}" TextColor="White" />
                                 <Label Text="{Binding OrigenDelPlato, StringFormat='Origen: {0}'}" TextColor="White" />
-                                <Label Text="{Binding IngredientePrincipal, StringFormat='Ingrediente principal: {0}'}" LineBreakMode="WordWrap" TextColor="White" />
+                                <Label Text="{Binding IngredientePrincipal, StringFormat='Ingredientes: {0}'}" LineBreakMode="WordWrap" TextColor="White" />
 
                                 <HorizontalStackLayout Spacing="15" Margin="0,5,0,0" VerticalOptions="End" HorizontalOptions="End">
-                                    <!-- BOTÓN DE LIKE -->
                                     <VerticalStackLayout>
                                         <Image Source="{Binding IconoLike}"
                                                HeightRequest="20"
@@ -153,8 +201,6 @@
                                                HorizontalOptions="Center"/>
                                     </VerticalStackLayout>
 
-
-                                    <!-- BOTÓN DE PUNTUAR -->
                                     <VerticalStackLayout Spacing="2" HorizontalOptions="Center">
                                         <Image Source="{Binding IconoEstrella}"
                                                HeightRequest="20"

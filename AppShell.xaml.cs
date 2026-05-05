@@ -20,6 +20,7 @@ namespace MiniTFG
             Routing.RegisterRoute("other", typeof(OtherProfilePage));
             Routing.RegisterRoute("settings", typeof(SettingsPage));
             Routing.RegisterRoute("recipesteps", typeof(RecipeStepsPage));
+            Routing.RegisterRoute("letmecook", typeof(LetMeCookPage));
 
             // Rutas de ajustes de cuenta.
             Routing.RegisterRoute("updateusername", typeof(UpdateUsernamePage));
