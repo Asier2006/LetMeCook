@@ -1,94 +1,108 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Vista comentada: Vista de login, recordar sesión, invitado y acceso a registro. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MiniTFG.LoginPage">
-    <VerticalStackLayout Spacing="20" Padding="30">
-        <Label 
-            Text="Inicia sesión"
-            FontSize="28"
-            FontAttributes="Bold"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
-        
-        <Entry 
-            Placeholder="Correo" 
-            x:Name="emailEntry"
-            FontSize="18"
-            BackgroundColor="#EEEEEE"
-            HeightRequest="60"
-            VerticalOptions="Center" 
-            HorizontalOptions="Fill" />
 
-        <HorizontalStackLayout>
-            <CheckBox
-                x:Name="chkRemember"
-                IsChecked="False"
-                CheckedChanged="RememberCheckedChanged"
-                VerticalOptions="Center"
-                HorizontalOptions="Start" />
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="30">
 
-            <Label
-                Text="Recuérdame"
-                FontSize="14"
-                VerticalOptions="Center"
-                HorizontalOptions="Start" />
-        </HorizontalStackLayout>
+            <!-- IMAGEN SUPERIOR -->
+            <Image
+                Source="lmc.png"
+                HeightRequest="140"
+                HorizontalOptions="Center" />
 
-        <Entry
-            Placeholder="Contraseña" 
-            x:Name="passwordEntry"
-            FontSize="18"
-            IsPassword="True" 
-            HeightRequest="60"
-            BackgroundColor="#EEEEEE"
-            VerticalOptions="Center" 
-            HorizontalOptions="Fill" />
+            <!-- TÍTULO -->
+            <Label 
+                Text="Inicia sesión..."
+                FontSize="28"
+                FontAttributes="Bold"
+                HorizontalOptions="Center" />
 
-        <HorizontalStackLayout>
-            <CheckBox
-                x:Name="chkShow"
-                IsChecked="False"
-                CheckedChanged="ShowCheckedChanged"
-                VerticalOptions="Center"
-                HorizontalOptions="Start" />
+            <!-- CORREO -->
+            <Entry 
+                Placeholder="Correo" 
+                x:Name="emailEntry"
+                FontSize="18"
+                BackgroundColor="#EEEEEE"
+                HeightRequest="60" />
 
-            <Label
-                Text="Mostrar contraseña"
-                FontSize="14"
-                VerticalOptions="Center"
-                HorizontalOptions="Start" />
-        </HorizontalStackLayout>
-        
-        <Button
-            Text="Iniciar sesión"
-            x:Name="btnSession"
-            Clicked="SessionClicked"
-            HeightRequest="50"
-            CornerRadius="10"
-            BackgroundColor="#9C40F7"
-            VerticalOptions="Center"
-            HorizontalOptions="Fill"
-            Margin="0,50,0,0" />
+            <!-- RECUÉRDAME -->
+            <HorizontalStackLayout VerticalOptions="Center">
+                <CheckBox
+                    x:Name="chkRemember"
+                    IsChecked="False"
+                    CheckedChanged="RememberCheckedChanged"
+                    Color="#FAC26C"
+                    VerticalOptions="Center" />
 
-        <Button
-            Text="Entrar como invitado"
-            x:Name="btnGuest"
-            Clicked="GuestClicked"
-            HeightRequest="50"
-            CornerRadius="10"
-            BackgroundColor="#9C40F7"
-            VerticalOptions="Center"
-            HorizontalOptions="Fill" />
+                <Label
+                    Text="Recuérdame"
+                    FontSize="14"
+                    VerticalOptions="Center"
+                    Margin="0,2,0,0" />
+            </HorizontalStackLayout>
 
-        <Button
-            Text="Crear una cuenta"
-            x:Name="btnCreate"
-            Clicked="CreateClicked"
-            HeightRequest="50"
-            CornerRadius="10"
-            BackgroundColor="#9C40F7"
-            VerticalOptions="Center"
-            HorizontalOptions="Fill" />
-    </VerticalStackLayout>
+            <!-- CONTRASEÑA -->
+            <Entry
+                Placeholder="Contraseña" 
+                x:Name="passwordEntry"
+                FontSize="18"
+                IsPassword="True" 
+                HeightRequest="60"
+                BackgroundColor="#EEEEEE" />
+
+            <!-- MOSTRAR CONTRASEÑA -->
+            <HorizontalStackLayout VerticalOptions="Center">
+                <CheckBox
+                    x:Name="chkShow"
+                    IsChecked="False"
+                    CheckedChanged="ShowCheckedChanged"
+                    Color="#FAC26C"
+                    VerticalOptions="Center" />
+
+                <Label
+                    Text="Mostrar contraseña"
+                    FontSize="14"
+                    VerticalOptions="Center"
+                    Margin="0,2,0,0" />
+            </HorizontalStackLayout>
+
+            <!-- BOTÓN INICIAR SESIÓN -->
+            <Button
+                Text="Iniciar sesión"
+                x:Name="btnSession"
+                Clicked="SessionClicked"
+                HeightRequest="50"
+                CornerRadius="10"
+                BackgroundColor="#FAC26C"
+                TextColor="White"
+                FontAttributes="Bold"
+                Margin="0,50,0,0" />
+
+            <!-- BOTÓN INVITADO -->
+            <Button
+                Text="Entrar como invitado"
+                x:Name="btnGuest"
+                Clicked="GuestClicked"
+                HeightRequest="50"
+                CornerRadius="10"
+                BackgroundColor="#FAC26C"
+                TextColor="White"
+                FontAttributes="Bold" />
+
+            <!-- BOTÓN CREAR CUENTA -->
+            <Button
+                Text="Crear una cuenta"
+                x:Name="btnCreate"
+                Clicked="CreateClicked"
+                HeightRequest="50"
+                CornerRadius="10"
+                BackgroundColor="#FAC26C"
+                TextColor="White"
+                FontAttributes="Bold" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
 </ContentPage>

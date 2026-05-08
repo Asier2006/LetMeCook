@@ -1,77 +1,81 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Vista comentada: Vista del primer paso de registro. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MiniTFG.NamePage">
-    <VerticalStackLayout Spacing="20" Padding="30">
-        <Label 
-            Text="Introduce tu nombre y tu correo"
-            FontSize="28"
-            FontAttributes="Bold"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
 
-        <Entry
-            Placeholder="Nombre" 
-            x:Name="nameEntry"
-            FontSize="18"
-            BackgroundColor="#EEEEEE"
-            HeightRequest="60"
-            VerticalOptions="Center" 
-            HorizontalOptions="Fill" />
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="30">
 
-        <Entry
-            Placeholder="Correo electrónico" 
-            x:Name="emailEntry"
-            FontSize="18"
-            BackgroundColor="#EEEEEE"
-            HeightRequest="60"
-            VerticalOptions="Center" 
-            HorizontalOptions="Fill" />
+            <!-- TÍTULO -->
+            <Label 
+                Text="Introduce tu nombre y tu correo"
+                FontSize="28"
+                FontAttributes="Bold"
+                HorizontalOptions="Center" />
 
-        <Entry
-            Placeholder="Contraseña" 
-            x:Name="passwordEntry"
-            FontSize="18"
-            IsPassword="True" 
-            HeightRequest="60"
-            BackgroundColor="#EEEEEE"
-            VerticalOptions="Center" 
-            HorizontalOptions="Fill" />
+            <!-- NOMBRE -->
+            <Entry
+                Placeholder="Nombre" 
+                x:Name="nameEntry"
+                FontSize="18"
+                BackgroundColor="#EEEEEE"
+                HeightRequest="60" />
 
-        <Entry
-            Placeholder="Repite la contraseña" 
-            x:Name="passwordRepeatEntry"
-            FontSize="18"
-            IsPassword="True" 
-            HeightRequest="60"
-            BackgroundColor="#EEEEEE"
-            VerticalOptions="Center" 
-            HorizontalOptions="Fill" />
+            <!-- CORREO -->
+            <Entry
+                Placeholder="Correo electrónico" 
+                x:Name="emailEntry"
+                FontSize="18"
+                BackgroundColor="#EEEEEE"
+                HeightRequest="60" />
 
-        <HorizontalStackLayout>
-            <CheckBox
-                x:Name="chkShow"
-                IsChecked="False"
-                CheckedChanged="ShowCheckedChanged"
-                VerticalOptions="Center"
-                HorizontalOptions="Start" />
+            <!-- CONTRASEÑA -->
+            <Entry
+                Placeholder="Contraseña" 
+                x:Name="passwordEntry"
+                FontSize="18"
+                IsPassword="True" 
+                HeightRequest="60"
+                BackgroundColor="#EEEEEE" />
 
-            <Label
-                Text="Mostrar contraseña"
-                FontSize="14"
-                VerticalOptions="Center"
-                HorizontalOptions="Start" />
-        </HorizontalStackLayout>
+            <!-- REPETIR CONTRASEÑA -->
+            <Entry
+                Placeholder="Repite la contraseña" 
+                x:Name="passwordRepeatEntry"
+                FontSize="18"
+                IsPassword="True" 
+                HeightRequest="60"
+                BackgroundColor="#EEEEEE" />
 
-        <Button
-            Text="Siguiente"
-            x:Name="btnNext"
-            Clicked="NextClicked"
-            HeightRequest="50"
-            CornerRadius="0"
-            BackgroundColor="#9C40F7"
-            VerticalOptions="Center"
-            HorizontalOptions="Fill" />
-    </VerticalStackLayout>
+            <!-- MOSTRAR CONTRASEÑA -->
+            <HorizontalStackLayout VerticalOptions="Center">
+                <CheckBox
+                    x:Name="chkShow"
+                    IsChecked="False"
+                    CheckedChanged="ShowCheckedChanged"
+                    Color="#FAC26C"
+                    VerticalOptions="Center" />
+
+                <Label
+                    Text="Mostrar contraseña"
+                    FontSize="14"
+                    VerticalOptions="Center"
+                    Margin="0,2,0,0" />
+            </HorizontalStackLayout>
+
+            <!-- BOTÓN SIGUIENTE -->
+            <Button
+                Text="Siguiente"
+                x:Name="btnNext"
+                Clicked="NextClicked"
+                HeightRequest="50"
+                CornerRadius="10"
+                BackgroundColor="#FAC26C"
+                TextColor="White"
+                FontAttributes="Bold"
+                HorizontalOptions="Fill" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
 </ContentPage>

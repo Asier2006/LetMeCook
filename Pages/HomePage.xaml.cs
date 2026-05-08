@@ -62,11 +62,13 @@ public partial class HomePage : ContentPage
         }
     }
 
-    private async void OnCreatorClicked(object sender, EventArgs e)
+    // Acceder al perfil del usuario
+    private async void OnCreatorClicked(object sender, TappedEventArgs e)
     {
-        if (sender is Button button && button.CommandParameter is int creadorId)
+        if (e.Parameter is int creadorId)
             await Shell.Current.GoToAsync($"other?usuarioId={creadorId}");
     }
+
 
     private List<Receta> FiltrarPorPreferencias(List<Receta> recetas, Usuario usuario)
     {
@@ -490,6 +492,8 @@ public partial class HomePage : ContentPage
             await Shell.Current.GoToAsync($"recipesteps?recetaId={ids[0]}&usuarioId={ids[1]}");
     }
 
+
+    // Parte en la que se clicka y se va cambiando de pestañas
     private async void InicioClicked(object sender, EventArgs e)
     {
         await CargarRecetasAsync();
@@ -520,6 +524,9 @@ public partial class HomePage : ContentPage
 
         await Shell.Current.GoToAsync("//profile");
     }
+
+
+    // Parte de efecto visual de los botones anteriores
 
     private static bool ContieneNormalizado(string origen, string busqueda)
     {
