@@ -1,98 +1,114 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Vista comentada: Vista del perfil del usuario actual. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:MiniTFG"
              x:Class="MiniTFG.ProfilePage">
-    <Grid RowDefinitions="Auto, *, Auto">
 
-        <!-- BANNER -->
-        <Grid Grid.Row="0">
-            <Image x:Name="BannerImage"
-                   Source="opbanner.jpg"
-                   Aspect="AspectFill"
-                   HeightRequest="180" />
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <TapGestureRecognizer x:Key="TapToCloseMenu"
+                                  Tapped="CerrarMenuTapped" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
-            <!-- FOTO DE PERFIL SUPERPUESTA -->
-            <Frame CornerRadius="60"
-                   HeightRequest="120"
-                   WidthRequest="120"
-                   BackgroundColor="White"
-                   Padding="3"
-                   VerticalOptions="End"
-                   HorizontalOptions="Center"
-                   Margin="0,-60,0,0">
-                <Image x:Name="ProfileImage"
-                       Source="user.png"
-                       Aspect="AspectFill" />
-            </Frame>
-        </Grid>
+    <Grid RowDefinitions="*, Auto">
 
-        <!-- CONTENIDO -->
-        <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20" Spacing="20">
-                <Label x:Name="UsernameLabel"
-                       Text="{Binding Nombre}"
-                       FontSize="24"
-                       FontAttributes="Bold"
-                       HorizontalOptions="Center"
-                       Margin="0,0,0,10" />
+        <!-- SCROLL PRINCIPAL -->
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="0">
 
-                <HorizontalStackLayout x:Name="EstrellasContainer" Spacing="4" HorizontalOptions="Center" />
+                <!-- BANNER -->
+                <Grid HeightRequest="160">
+                    <Image x:Name="BannerImage"
+                           Aspect="AspectFill"
+                           HeightRequest="160" />
+                </Grid>
 
-                <Label Text="{Binding Puntos, StringFormat='Puntos: {0}'}"
-                       FontSize="16"
-                       TextColor="#666"
-                       HorizontalOptions="Center" />
+                <!-- FOTO + NOMBRE + ESTRELLAS + BOTONES T/A -->
+                <Grid ColumnDefinitions="Auto, *"
+                      Margin="20,-40,20,0">
 
-                <HorizontalStackLayout>
-                    <Button Text="Tienda de skins"
-                            BackgroundColor="#9C40F7"
+                    <VerticalStackLayout Grid.Column="0" Spacing="5">
+
+                        <Border HeightRequest="100"
+                                WidthRequest="100"
+                                Stroke="White"
+                                StrokeThickness="3"
+                                BackgroundColor="Transparent"
+                                StrokeShape="Ellipse">
+                            <Image x:Name="ProfileImage"
+                                   Aspect="AspectFill" />
+                        </Border>
+
+                        <Label x:Name="UsernameLabel"
+                               FontSize="26"
+                               FontAttributes="Bold"
+                               TextColor="Black" />
+
+                        <HorizontalStackLayout x:Name="EstrellasContainer"
+                                               Spacing="4" />
+                    </VerticalStackLayout>
+
+                    <HorizontalStackLayout Grid.Column="1"
+                                           HorizontalOptions="End"
+                                           VerticalOptions="Center"
+                                           Spacing="10">
+
+                        <Button x:Name="BtnTienda"
+                                Text="T"
+                                BackgroundColor="#E09A3F"
+                                TextColor="White"
+                                CornerRadius="10"
+                                WidthRequest="40"
+                                HeightRequest="40"
+                                Clicked="AbrirTiendaClicked"/>
+
+                        <Button x:Name="BtnAjustes"
+                                Text="A"
+                                BackgroundColor="#E09A3F"
+                                TextColor="White"
+                                CornerRadius="10"
+                                WidthRequest="40"
+                                HeightRequest="40"
+                                Clicked="AbrirAjustesClicked"/>
+                    </HorizontalStackLayout>
+
+                </Grid>
+
+                <!-- BOTONES RECTANGULARES -->
+                <HorizontalStackLayout HorizontalOptions="Center"
+                                       Margin="0,25,0,0">
+
+                    <Button x:Name="BtnRecetas"
+                            Text="Recetas"
+                            BackgroundColor="#E09A3F"
                             TextColor="White"
-                            CornerRadius="15"
-                            HeightRequest="50"
-                            Clicked="AbrirTiendaClicked" />
-                    <Button Text="Ajustes"
-                            BackgroundColor="#9C40F7"
+                            WidthRequest="150"
+                            HeightRequest="45"
+                            Clicked="RecetasTabClicked"/>
+
+                    <Button x:Name="BtnSobreMi"
+                            Text="Sobre mí"
+                            BackgroundColor="#E09A3F"
                             TextColor="White"
-                            CornerRadius="15"
-                            HeightRequest="50"
-                            Clicked="AbrirAjustesClicked" />
+                            WidthRequest="150"
+                            HeightRequest="45"
+                            Clicked="SobreMiTabClicked"/>
                 </HorizontalStackLayout>
-                
-                <Label Text="Mis recetas"
-                       FontSize="20"
-                       HorizontalOptions="Center" />
 
-                <CollectionView ItemsSource="{Binding MisRecetas}" x:Name="ListaMisRecetas">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Border StrokeThickness="0" BackgroundColor="#9C40F7" StrokeShape="RoundRectangle 15" Padding="10" HeightRequest="250">
-                                <Grid ColumnDefinitions="Auto, *">
-                                    <Image Grid.Column="0"
-                                           Source="{Binding ImagenSource}"
-                                           Aspect="AspectFill"
-                                           HeightRequest="200"
-                                           WidthRequest="200" />
+                <BoxView HeightRequest="6"
+                         BackgroundColor="#E09A3F"
+                         CornerRadius="3"
+                         Margin="20,10,20,10"/>
 
-                                    <VerticalStackLayout Grid.Column="1" Padding="10,0" Spacing="4">
-                                        <Label Text="{Binding Titulo}" FontAttributes="Bold" TextColor="White" FontSize="18" />
-                                        <Label Text="{Binding Comensales, StringFormat='Comensales: {0}'}" TextColor="White"/>
-                                        <Label Text="{Binding TiempoPreparacion, StringFormat='Tiempo: {0} min'}" TextColor="White" />
-                                        <Label Text="{Binding TipoCocina, StringFormat='Cocina: {0}'}" TextColor="White" />
-                                        <Label Text="{Binding OrigenDelPlato, StringFormat='Origen: {0}'}" TextColor="White" />
-                                        <Label Text="{Binding IngredientePrincipal, StringFormat='Ingrediente principal: {0}'}" LineBreakMode="WordWrap" TextColor="White" />
-                                    </VerticalStackLayout>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
+                <ContentView x:Name="ContentSwitcher"
+                             Margin="20,10,20,0" />
+
             </VerticalStackLayout>
         </ScrollView>
 
         <!-- BOTTOM BAR -->
-        <Grid x:Name="BottomBar"
-              Grid.Row="2"
+        <Grid Grid.Row="1"
               BackgroundColor="#9C40F7"
               HeightRequest="65"
               Padding="5"
@@ -101,23 +117,46 @@
             <Button Grid.Column="0"
                     Text="Inicio"
                     ImageSource="home.png"
-                    TextColor="Black"
                     BackgroundColor="#9C40F7"
                     Clicked="InicioClicked" />
 
             <Button Grid.Column="1"
                     Text="Recetas"
-                    TextColor="Black"
                     ImageSource="recipes.png"
                     BackgroundColor="#9C40F7"
                     Clicked="RecetasClicked" />
 
             <Button Grid.Column="2"
                     Text="Perfil"
-                    TextColor="Black"
                     ImageSource="user.png"
                     BackgroundColor="#9C40F7"
                     Clicked="PerfilClicked" />
+
+        </Grid>
+
+        <!-- FONDO OSCURO -->
+        <BoxView x:Name="Overlay"
+                 Grid.RowSpan="2"
+                 BackgroundColor="#00000066"
+                 IsVisible="False"
+                 Opacity="0">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="CerrarMenuTapped" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <!-- MENÚ LATERAL -->
+        <Grid x:Name="SideMenu"
+              Grid.RowSpan="2"
+              BackgroundColor="White"
+              WidthRequest="280"
+              HorizontalOptions="End"
+              TranslationX="300"
+              Padding="20"
+              IsVisible="False">
+
+            <local:SettingsView />
+
         </Grid>
 
     </Grid>

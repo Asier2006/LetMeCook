@@ -251,28 +251,51 @@ public partial class RecipesPage : ContentPage
         {
             StrokeThickness = 0,
             StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
-            BackgroundColor = Color.FromArgb("#6A0DAD"),
-            Padding = new Thickness(10, 5),
-            Margin = new Thickness(2),
-            Content = new Label
-            {
-                Text = $"{texto} ✕",
-                TextColor = Colors.White,
-                FontSize = 12
-            }
+            BackgroundColor = Color.FromArgb("#FAC26C"), // NARANJA CLÁSICO
+            Padding = new Thickness(12, 6),              // MÁS GRANDE
+            Margin = new Thickness(6)                    // MÁS SEPARACIÓN
         };
 
-        tag.GestureRecognizers.Add(new TapGestureRecognizer
+        var contenido = new HorizontalStackLayout
         {
-            Command = new Command(() =>
-            {
-                quitar?.Invoke();
-                ActualizarTagsVisuales();
-            })
+            Spacing = 6,
+            VerticalOptions = LayoutOptions.Center
+        };
+
+        // Texto del tag
+        contenido.Children.Add(new Label
+        {
+            Text = texto,
+            TextColor = Colors.White,
+            FontSize = 14,
+            VerticalOptions = LayoutOptions.Center
         });
 
+        // Botón de eliminar (X)
+        contenido.Children.Add(new Label
+        {
+            Text = "✕",
+            TextColor = Colors.White,
+            FontSize = 14,
+            FontAttributes = FontAttributes.Bold,
+            VerticalOptions = LayoutOptions.Center,
+            GestureRecognizers =
+        {
+            new TapGestureRecognizer
+            {
+                Command = new Command(() =>
+                {
+                    quitar?.Invoke();
+                    ActualizarTagsVisuales();
+                })
+            }
+        }
+        });
+
+        tag.Content = contenido;
         return tag;
     }
+
 
     private void CompletarEtiquetasDesdeTexto()
     {
@@ -313,6 +336,28 @@ public partial class RecipesPage : ContentPage
         await Shell.Current.GoToAsync($"letmecook?recetaId={creada.Id}&usuarioId={creada.UsuarioId}");
     }
 
+    private void MarcarErrores()
+    {
+        Color errorColor = Color.FromArgb("#FFCCCC"); // rojo suave
+
+        // Nombre obligatorio
+        NombreEntry.BackgroundColor =
+            string.IsNullOrWhiteSpace(NombreEntry.Text) ? errorColor : Colors.Transparent;
+
+        // Descripción obligatoria
+        DescripcionEntry.BackgroundColor =
+            string.IsNullOrWhiteSpace(DescripcionEntry.Text) ? errorColor : Colors.Transparent;
+
+        // Comensales obligatorio
+        ComensalesEntry.BackgroundColor =
+            string.IsNullOrWhiteSpace(ComensalesEntry.Text) ? errorColor : Colors.Transparent;
+
+        // Imagen obligatoria
+        ImagenPreview.BackgroundColor =
+            ImagenPreview.Source == null ? errorColor : Colors.Transparent;
+    }
+
+
     private async Task<Receta> GuardarRecetaBaseAsync()
     {
         if (_guardando)
@@ -324,13 +369,20 @@ public partial class RecipesPage : ContentPage
             return null;
         }
 
+        // 🔶 Marcar visualmente los errores
+        MarcarErrores();
+
         if (string.IsNullOrWhiteSpace(NombreEntry.Text) ||
             string.IsNullOrWhiteSpace(DescripcionEntry.Text) ||
-            string.IsNullOrWhiteSpace(ComensalesEntry.Text))
+            string.IsNullOrWhiteSpace(ComensalesEntry.Text) ||
+            ImagenPreview.Source == null)
         {
-            await DisplayAlertAsync("Campos obligatorios", "Rellena nombre, descripción y comensales.", "OK");
+            await DisplayAlertAsync("Campos obligatorios",
+                                    "Debes rellenar todos los campos marcados con (*).",
+                                    "OK");
             return null;
         }
+
 
         if (!int.TryParse(ComensalesEntry.Text, out int comensales) || comensales <= 0)
         {

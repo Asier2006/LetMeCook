@@ -35,5 +35,7 @@ namespace MiniTFG
 
         // Puntos gastables en tienda y obtenidos por actividad: likes, campos opcionales y vídeos.
         public int Puntos { get; set; }
+        public string? Descripcion { get; set; }
+
     }
 }

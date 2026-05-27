@@ -1,24 +1,31 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Vista comentada: Vista de tienda de skins de foto y banner. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MiniTFG.ShopPage">
+
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="30">
 
             <!-- TÍTULO -->
-            <Label Text="Tienda de skins"
-                   FontSize="32"
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center"
-                   TextColor="#333" />
+            <Frame BackgroundColor="#E09A3F"
+                   Padding="10"
+                   CornerRadius="12"
+                   HorizontalOptions="Center">
+                <Label Text="TIENDA"
+                       FontSize="28"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       HorizontalOptions="Center" />
+            </Frame>
+
+            <!-- PUNTOS -->
+            <Label x:Name="LikesLabel"
+                   FontSize="16"
+                   TextColor="#666"
+                   HorizontalOptions="Center" />
 
             <!-- BANNERS -->
             <VerticalStackLayout Spacing="10">
-                <Label x:Name="LikesLabel"
-                       FontSize="16"
-                       TextColor="#666" />
-
                 <Label Text="Banners"
                        FontSize="22"
                        FontAttributes="Bold"
@@ -26,13 +33,11 @@
 
                 <ScrollView Orientation="Horizontal">
                     <HorizontalStackLayout x:Name="BannersContainer"
-                                           Spacing="15">
-                        <!-- Aquí se añadirán los banners dinámicamente -->
-                    </HorizontalStackLayout>
+                                           Spacing="15" />
                 </ScrollView>
             </VerticalStackLayout>
 
-            <!-- FOTOS DE PERFIL -->
+            <!-- FOTOS -->
             <VerticalStackLayout Spacing="10">
                 <Label Text="Fotos de perfil"
                        FontSize="22"
@@ -41,10 +46,36 @@
 
                 <ScrollView Orientation="Horizontal">
                     <HorizontalStackLayout x:Name="FotosContainer"
-                                           Spacing="15">
-                        <!-- Aquí se añadirán las fotos dinámicamente -->
-                    </HorizontalStackLayout>
+                                           Spacing="15" />
                 </ScrollView>
+            </VerticalStackLayout>
+
+            <!-- SOBRE MÍ -->
+            <VerticalStackLayout Spacing="10">
+                <Label Text="Sobre mí"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       TextColor="#444" />
+
+                <Frame BackgroundColor="#f2f2f2"
+                       CornerRadius="10"
+                       Padding="10">
+                    <Editor x:Name="BioEditor"
+                            Placeholder="Escribe aquí tu biografía (máx. 160 caracteres)"
+                            AutoSize="TextChanges"
+                            HeightRequest="120"
+                            MaxLength="160"
+                            BackgroundColor="Transparent"
+                            TextColor="Black"
+                            FontSize="16" />
+                </Frame>
+
+                <Button Text="Guardar"
+                        BackgroundColor="#E09A3F"
+                        TextColor="White"
+                        CornerRadius="10"
+                        HeightRequest="45"
+                        Clicked="GuardarBioClicked" />
             </VerticalStackLayout>
 
         </VerticalStackLayout>

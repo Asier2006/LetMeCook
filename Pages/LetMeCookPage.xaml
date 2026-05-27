@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Página avanzada para completar una receta con pasos, comentarios y vídeos. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MiniTFG.LetMeCookPage"
@@ -7,26 +6,36 @@
              BackgroundColor="#1E1E1E">
 
     <Grid RowDefinitions="Auto,*,Auto">
-        <VerticalStackLayout Grid.Row="0" Padding="20,16" Spacing="6" BackgroundColor="#9C40F7">
-            <Label Text="Let me Cook"
-                   FontSize="26"
-                   FontAttributes="Bold"
-                   TextColor="White"
-                   HorizontalOptions="Center" />
+
+        <!-- CABECERA -->
+        <VerticalStackLayout Grid.Row="0"
+                             Padding="20,16"
+                             Spacing="6"
+                             BackgroundColor="#FAC26C">
+            <Image Source="lmcwhite.png"
+       HeightRequest="42"
+       HorizontalOptions="Center"
+       Aspect="AspectFit" />
+
+
             <Label x:Name="RecetaTituloLabel"
-                   Text="Completa tu receta"
+                   Text="CREACIÓN AVANZADA"
+                   FontAttributes="Bold"
                    FontSize="16"
                    TextColor="White"
                    HorizontalOptions="Center" />
+
             <Label x:Name="PuntosLabel"
                    Text="Puntos avanzados: 0"
                    FontSize="14"
-                   TextColor="#E8D7FF"
+                   TextColor="#FFF3D6"
                    HorizontalOptions="Center" />
         </VerticalStackLayout>
 
+        <!-- CONTENIDO PRINCIPAL -->
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Padding="20" Spacing="16">
+
                 <Label Text="Añade pasos, comentarios y vídeos"
                        TextColor="White"
                        FontSize="18"
@@ -36,36 +45,45 @@
                        TextColor="#CFCFCF"
                        FontSize="14" />
 
-                <VerticalStackLayout x:Name="PasosContainer" Spacing="14" />
+                <!-- CONTENEDOR DE PASOS -->
+                <VerticalStackLayout x:Name="PasosContainer"
+                                     Spacing="14" />
 
+                <!-- BOTÓN AÑADIR PASO -->
                 <Button Text="+ Añadir paso"
-                        BackgroundColor="#7A1CCF"
+                        BackgroundColor="#E09A3F"
                         TextColor="White"
                         CornerRadius="10"
                         HeightRequest="48"
                         Clicked="AgregarPasoClicked" />
+
             </VerticalStackLayout>
         </ScrollView>
 
+        <!-- FOOTER -->
         <Grid Grid.Row="2"
-              BackgroundColor="#9C40F7"
+              BackgroundColor="#FAC26C"
               Padding="10"
               ColumnDefinitions="*,*"
               ColumnSpacing="10"
               HeightRequest="70">
+
             <Button Text="Cancelar"
                     Grid.Column="0"
                     BackgroundColor="#555"
                     TextColor="White"
                     CornerRadius="10"
                     Clicked="CancelarClicked" />
+
             <Button Text="Guardar pasos"
                     Grid.Column="1"
-                    BackgroundColor="#6A0DAD"
+                    BackgroundColor="#E09A3F"
                     TextColor="White"
                     FontAttributes="Bold"
                     CornerRadius="10"
                     Clicked="GuardarPasosClicked" />
+
         </Grid>
+
     </Grid>
 </ContentPage>

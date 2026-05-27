@@ -531,6 +531,33 @@ namespace MiniTFG
         }
 
 
+        /*
+        //Modifica aqui la info y tal
+        private MySqlConnection GetConnection()
+        {
+            return new MySqlConnection("Server=TU_SERVIDOR;Database=TU_BBDD;User ID=TU_USUARIO;Password=TU_PASSWORD;");
+        }*/
+
+        /*
+
+        //Descripcion
+        
+        public async Task<bool> UpdateDescripcionUsuarioAsync(int userId, string descripcion)
+        {
+            using var connection = GetConnection();
+            await connection.OpenAsync();
+
+            var query = "UPDATE usuarios SET Descripcion = @desc WHERE Id = @id";
+
+            using var cmd = new MySqlCommand(query, connection);
+            cmd.Parameters.AddWithValue("@desc", descripcion);
+            cmd.Parameters.AddWithValue("@id", userId);
+
+            return await cmd.ExecuteNonQueryAsync() > 0;
+        }
+         */
+
+
 
         //  CATÁLOGOS / ETIQUETAS / PUNTOS
 

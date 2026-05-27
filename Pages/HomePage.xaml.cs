@@ -494,19 +494,42 @@ public partial class HomePage : ContentPage
 
 
     // Parte en la que se clicka y se va cambiando de pestañas
+
+    private async Task PulsarBoton(Button boton)
+    {
+        var normal = Color.FromArgb("#FAC26C");   // Naranja claro
+        var oscuro = Color.FromArgb("#E0A85A");   // Naranja oscuro
+
+        // Cambiar a oscuro (efecto de pulsación)
+        boton.BackgroundColor = oscuro;
+
+        // Esperar un instante
+        await Task.Delay(120);
+
+        // Volver al color normal
+        boton.BackgroundColor = normal;
+    }
+
+
+
+
     private async void InicioClicked(object sender, EventArgs e)
     {
+        await PulsarBoton(BtnInicio);
+
         await CargarRecetasAsync();
         await Shell.Current.GoToAsync("//home");
     }
 
     private async void RecetasClicked(object sender, EventArgs e)
     {
+        await PulsarBoton(BtnRecetas);
         await Shell.Current.GoToAsync("//recipes");
     }
 
     private async void PerfilClicked(object sender, EventArgs e)
     {
+        await PulsarBoton(BtnPerfil);
         if (App.UsuarioActual == null)
         {
             bool irLogin = await DisplayAlertAsync(

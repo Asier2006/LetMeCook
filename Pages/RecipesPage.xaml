@@ -1,166 +1,315 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Vista de creación básica de receta. Los pasos/vídeos se crean en la opción avanzada Let me Cook. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MiniTFG.RecipesPage">
 
     <Grid RowDefinitions="*, Auto">
-        <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="20" Spacing="16">
-                <Label Text="Crear nueva receta"
-                       FontSize="28"
-                       FontAttributes="Bold"
-                       HorizontalOptions="Center" />
 
-                <Label Text="Campos obligatorios" FontAttributes="Bold" TextColor="#9C40F7" FontSize="18" />
+        <!-- SCROLL PRINCIPAL -->
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="20" Spacing="14">
+
+                <!-- 🔶 TÍTULO PRINCIPAL -->
+                <Border BackgroundColor="#FAC26C"
+                        Padding="12"
+                        StrokeShape="RoundRectangle 15"
+                        HorizontalOptions="Fill">
+                    <Label Text="CREAR NUEVA RECETA"
+                           TextColor="White"
+                           FontSize="26"
+                           FontAttributes="Bold"
+                           HorizontalOptions="Center" />
+                </Border>
+
+                <!-- NOMBRE DEL PLATO -->
+                <Label FontSize="18" FontAttributes="Bold">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Nombre del plato " TextColor="Black"/>
+                            <Span Text="*" TextColor="Red"/>
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
 
                 <Entry x:Name="NombreEntry"
-                       Placeholder="Nombre del plato *"
+                       Placeholder="Ej: Carrilleras"
+                       FontSize="18" />
+
+                <!-- DESCRIPCIÓN BREVE -->
+                <Label Text="Descripción breve del plato"
+                       FontAttributes="Bold"
+                       TextColor="Black"
                        FontSize="18" />
 
                 <Editor x:Name="DescripcionEntry"
-                        Placeholder="Descripción del plato *"
+                        Placeholder="Inserta una breve descripción del plato"
                         FontSize="18"
                         AutoSize="TextChanges"
                         HeightRequest="110" />
 
+                <!-- COMENSALES -->
+                <Label FontSize="18" FontAttributes="Bold">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Comensales " TextColor="Black"/>
+                            <Span Text="*" TextColor="Red"/>
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+
                 <Entry x:Name="ComensalesEntry"
-                       Placeholder="Comensales *"
+                       Placeholder="Número de comensales"
                        FontSize="18"
                        Keyboard="Numeric" />
 
-                <Label Text="Imagen del plato" FontAttributes="Bold" FontSize="18" />
+                <!-- TIEMPO DE PREPARACIÓN -->
+                <Label Text="Tiempo de preparación"
+                       FontAttributes="Bold"
+                       TextColor="Black"
+                       FontSize="18" />
+
+                <Entry x:Name="TiempoEntry"
+                       Placeholder="Inserta el tiempo en minutos"
+                       FontSize="18"
+                       Keyboard="Numeric" />
+
+                <!-- IMAGEN -->
+                <Label FontSize="18" FontAttributes="Bold">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Imagen del plato " TextColor="Black"/>
+                            <Span Text="*" TextColor="Red"/>
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+
                 <Image x:Name="ImagenPreview"
                        HeightRequest="180"
                        BackgroundColor="#DDDDDD"
                        Aspect="AspectFill" />
+
                 <Button Text="Seleccionar imagen (+1 punto)"
-                        BackgroundColor="#9C40F7"
+                        BackgroundColor="#FAC26C"
                         TextColor="White"
                         CornerRadius="10"
                         Clicked="SeleccionarImagenClicked" />
 
-                <Label Text="Campos opcionales (+1 punto cada bloque rellenado)" FontAttributes="Bold" TextColor="#4CAF50" FontSize="18" />
-
-                <Entry x:Name="TiempoEntry"
-                       Placeholder="Tiempo de preparación en minutos (+1)"
+                <!-- CAMPOS OPCIONALES -->
+                <Label Text="Campos opcionales (+1 punto cada bloque rellenado)"
+                       FontAttributes="Bold"
+                       TextColor="#4CAF50"
                        FontSize="18"
-                       Keyboard="Numeric" />
+                       Margin="0,10,0,0" />
 
-                <Label Text="Origen / nacionalidad (+1)" FontAttributes="Bold" />
+                <!-- ORIGEN -->
+                <Label FontSize="18" FontAttributes="Bold">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Origen / nacionalidad " TextColor="Black"/>
+                            <Span Text="(+1)" TextColor="#4CAF50"/>
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+
                 <Entry x:Name="OrigenEntry"
-                       Placeholder="Buscar origen: es → España"
-                       FontSize="18"
-                       TextChanged="OnOrigenTextChanged" />
-                <FlexLayout x:Name="OrigenTagsLayout" Wrap="Wrap" Direction="Row" />
-                <CollectionView ItemsSource="{Binding OrigenSugerencias}" HeightRequest="70" SelectionMode="None">
+       Placeholder="Buscar origen: es → España"
+       FontSize="18"
+       TextChanged="OnOrigenTextChanged" />
+
+                <FlexLayout x:Name="OrigenTagsLayout"
+            Wrap="Wrap"
+            Direction="Row" />
+
+                <CollectionView ItemsSource="{Binding OrigenSugerencias}"
+                HeightRequest="Auto"
+                SelectionMode="None">
                     <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Horizontal" />
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10" />
                     </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <Border StrokeThickness="0" StrokeShape="RoundRectangle 12" BackgroundColor="#6A0DAD" Padding="10,5" Margin="3">
+                            <Border StrokeThickness="0"
+                    StrokeShape="RoundRectangle 12"
+                    BackgroundColor="#FAC26C"
+                    Padding="12,6"
+                    Margin="8,4">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnOrigenSugerenciaTapped" />
                                 </Border.GestureRecognizers>
-                                <Label Text="{Binding .}" TextColor="White" FontSize="12" />
+                                <Label Text="{Binding .}"
+                       TextColor="White"
+                                       FontAttributes="Bold"
+
+                       FontSize="14" />
                             </Border>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
-                <Label Text="Tipo de cocina (+1)" FontAttributes="Bold" />
+
+                <!-- TIPO DE COCINA -->
+                <Label FontSize="18" FontAttributes="Bold">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Tipo de cocina " TextColor="Black"/>
+                            <Span Text="(+1)" TextColor="#4CAF50"/>
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+
                 <Entry x:Name="TipoCocinaEntry"
-                       Placeholder="Buscar tipo: hor → Horno"
-                       FontSize="18"
-                       TextChanged="OnTipoCocinaTextChanged" />
-                <FlexLayout x:Name="TipoCocinaTagsLayout" Wrap="Wrap" Direction="Row" />
-                <CollectionView ItemsSource="{Binding TipoCocinaSugerencias}" HeightRequest="70" SelectionMode="None">
+       Placeholder="Buscar tipo: hor → Horno"
+       FontSize="18"
+       TextChanged="OnTipoCocinaTextChanged" />
+
+                <FlexLayout x:Name="TipoCocinaTagsLayout"
+            Wrap="Wrap"
+            Direction="Row" />
+
+                <CollectionView ItemsSource="{Binding TipoCocinaSugerencias}"
+                HeightRequest="Auto"
+                SelectionMode="None">
                     <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Horizontal" />
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10" />
                     </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <Border StrokeThickness="0" StrokeShape="RoundRectangle 12" BackgroundColor="#6A0DAD" Padding="10,5" Margin="3">
+                            <Border StrokeThickness="0"
+                    StrokeShape="RoundRectangle 12"
+                    BackgroundColor="#FAC26C"
+                    Padding="12,6"
+                    Margin="8,4">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnTipoCocinaSugerenciaTapped" />
                                 </Border.GestureRecognizers>
-                                <Label Text="{Binding .}" TextColor="White" FontSize="12" />
+                                <Label Text="{Binding .}"
+                       TextColor="White"
+                                       FontAttributes="Bold"
+
+                       FontSize="14" />
                             </Border>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
-                <Label Text="Ingredientes (+1)" FontAttributes="Bold" />
+
+                <!-- INGREDIENTES -->
+                <Label FontSize="18" FontAttributes="Bold">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Ingredientes " TextColor="Black"/>
+                            <Span Text="(+1)" TextColor="#4CAF50"/>
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+
                 <Entry x:Name="IngredienteEntry"
-                       Placeholder="Buscar ingrediente: man → Manzana"
-                       FontSize="18"
-                       TextChanged="OnIngredienteTextChanged" />
-                <FlexLayout x:Name="IngredienteTagsLayout" Wrap="Wrap" Direction="Row" />
-                <CollectionView ItemsSource="{Binding IngredienteSugerencias}" HeightRequest="70" SelectionMode="None">
+       Placeholder="Buscar ingrediente: man → Manzana"
+       FontSize="18"
+       TextChanged="OnIngredienteTextChanged" />
+
+                <FlexLayout x:Name="IngredienteTagsLayout"
+            Wrap="Wrap"
+            Direction="Row" />
+
+                <CollectionView ItemsSource="{Binding IngredienteSugerencias}"
+                HeightRequest="Auto"
+                SelectionMode="None">
                     <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Horizontal" />
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10" />
                     </CollectionView.ItemsLayout>
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <Border StrokeThickness="0" StrokeShape="RoundRectangle 12" BackgroundColor="#6A0DAD" Padding="10,5" Margin="3">
+                            <Border StrokeThickness="0"
+                    StrokeShape="RoundRectangle 12"
+                    BackgroundColor="#FAC26C"
+                    Padding="12,6"
+                    Margin="8,4">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnIngredienteSugerenciaTapped" />
                                 </Border.GestureRecognizers>
-                                <Label Text="{Binding .}" TextColor="White" FontSize="12" />
+                                <Label Text="{Binding .}"
+                       TextColor="White"
+                                       FontAttributes="Bold"
+
+                       FontSize="14" />
                             </Border>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
-                <Label Text="¿Contiene este alérgeno?" FontAttributes="Bold" VerticalOptions="Center" FontSize="18" />
+
+
+                <!-- ALÉRGENOS -->
+                <Label Text="¿Contiene este alérgeno?"
+                       FontAttributes="Bold"
+                       FontSize="18"
+                       TextColor="Black" />
+
                 <CollectionView ItemsSource="{Binding Alergenos}">
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
                             <HorizontalStackLayout Spacing="10" Padding="10">
-                                <CheckBox IsChecked="{Binding Seleccion}" VerticalOptions="Center" />
-                                <Label Text="{Binding Nombre}" FontSize="18" VerticalOptions="Center" />
+                                <CheckBox IsChecked="{Binding Seleccion}"
+                                          Color="#FAC26C"
+                                          VerticalOptions="Center" />
+                                <Label Text="{Binding Nombre}"
+                                       FontSize="18"
+                                       VerticalOptions="Center" />
                             </HorizontalStackLayout>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
-                <Label Text="¿Es apto para esta preferencia?" FontAttributes="Bold" VerticalOptions="Center" FontSize="18" />
+                <!-- PREFERENCIAS -->
+                <Label Text="¿Es apto para esta preferencia?"
+                       FontAttributes="Bold"
+                       FontSize="18"
+                       TextColor="Black" />
+
                 <CollectionView ItemsSource="{Binding Preferencias}">
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
                             <HorizontalStackLayout Spacing="10" Padding="10">
-                                <CheckBox IsChecked="{Binding Seleccion}" VerticalOptions="Center" />
-                                <Label Text="{Binding Nombre}" FontSize="18" VerticalOptions="Center" />
+                                <CheckBox IsChecked="{Binding Seleccion}"
+                                          Color="#FAC26C"
+                                          VerticalOptions="Center" />
+                                <Label Text="{Binding Nombre}"
+                                       FontSize="18"
+                                       VerticalOptions="Center" />
                             </HorizontalStackLayout>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
+                <!-- BOTONES -->
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+
                     <Button Text="Crear"
                             Grid.Column="0"
-                            BackgroundColor="#555"
-                            TextColor="White"
+                            BackgroundColor="White"
+                            TextColor="#FAC26C"
                             CornerRadius="10"
                             HeightRequest="50"
                             Clicked="GuardarRecetaClicked" />
 
                     <Button Text="Let me Cook"
                             Grid.Column="1"
-                            BackgroundColor="#9C40F7"
+                            BackgroundColor="#FAC26C"
                             TextColor="White"
                             CornerRadius="10"
                             HeightRequest="50"
                             FontAttributes="Bold"
                             Clicked="LetMeCookClicked" />
                 </Grid>
+
             </VerticalStackLayout>
         </ScrollView>
 
+        <!-- BARRA INFERIOR -->
         <Grid x:Name="BottomBar"
               Grid.Row="1"
-              BackgroundColor="#9C40F7"
+              BackgroundColor="#FAC26C"
               HeightRequest="65"
               Padding="5"
               ColumnDefinitions="*,*,*"
@@ -170,22 +319,23 @@
                     Text="Inicio"
                     TextColor="Black"
                     ImageSource="home.png"
-                    BackgroundColor="#9C40F7"
+                    BackgroundColor="#FAC26C"
                     Clicked="InicioClicked" />
 
             <Button Grid.Column="1"
                     Text="Recetas"
                     TextColor="Black"
                     ImageSource="recipes.png"
-                    BackgroundColor="#9C40F7"
+                    BackgroundColor="#FAC26C"
                     Clicked="RecetasClicked" />
 
             <Button Grid.Column="2"
                     Text="Perfil"
                     TextColor="Black"
                     ImageSource="user.png"
-                    BackgroundColor="#9C40F7"
+                    BackgroundColor="#FAC26C"
                     Clicked="PerfilClicked" />
         </Grid>
+
     </Grid>
 </ContentPage>

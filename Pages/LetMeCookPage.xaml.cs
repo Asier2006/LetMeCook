@@ -89,14 +89,47 @@ public partial class LetMeCookPage : ContentPage
 
         var layout = new VerticalStackLayout { Spacing = 10 };
 
-        layout.Children.Add(new Label
+        // CABECERA (TÍTULO + ELIMINAR)
+        var header = new Grid
+        {
+            ColumnDefinitions =
+            {
+                new ColumnDefinition { Width = GridLength.Star },
+                new ColumnDefinition { Width = GridLength.Auto }
+            }
+        };
+
+        header.Children.Add(new Label
         {
             Text = $"Paso {numeroPaso}",
-            TextColor = Color.FromArgb("#9C40F7"),
+            TextColor = Color.FromArgb("#FAC26C"),
             FontAttributes = FontAttributes.Bold,
             FontSize = 20
         });
 
+        var eliminarBtn = new Button
+        {
+            Text = "Eliminar",
+            BackgroundColor = Color.FromArgb("#FF5555"),
+            TextColor = Colors.White,
+            CornerRadius = 8,
+            Padding = new Thickness(10, 4),
+            FontSize = 12
+        };
+
+        eliminarBtn.Clicked += (_, _) =>
+        {
+            _pasos.Remove(paso);
+            PasosContainer.Children.Remove(card);
+            ActualizarPuntosPreview();
+        };
+
+        header.Children.Add(eliminarBtn);
+        Grid.SetColumn(eliminarBtn, 1);
+
+        layout.Children.Add(header);
+
+        // TÍTULO
         var tituloEntry = new Entry
         {
             Placeholder = $"Título o comentario corto del paso {numeroPaso}",
@@ -105,6 +138,7 @@ public partial class LetMeCookPage : ContentPage
             BackgroundColor = Color.FromArgb("#3A3A3A")
         };
 
+        // DESCRIPCIÓN
         var descripcionEditor = new Editor
         {
             Placeholder = "Descripción/comentario opcional (+2 puntos)",
@@ -128,17 +162,19 @@ public partial class LetMeCookPage : ContentPage
         tituloEntry.TextChanged += (_, _) => ActualizarDescripcion();
         descripcionEditor.TextChanged += (_, _) => ActualizarDescripcion();
 
+        // LABEL DE VÍDEOS
         var videoLabel = new Label
         {
-            Text = "Sin vídeo seleccionado",
+            Text = "Sin vídeos",
             TextColor = Colors.LightGray,
             FontSize = 13
         };
 
+        // BOTÓN AÑADIR VÍDEO
         var videoButton = new Button
         {
-            Text = "Seleccionar vídeo (+3 puntos)",
-            BackgroundColor = Color.FromArgb("#9C40F7"),
+            Text = "Añadir vídeo (+3 puntos)",
+            BackgroundColor = Color.FromArgb("#E09A3F"),
             TextColor = Colors.White,
             CornerRadius = 8
         };
@@ -163,7 +199,7 @@ public partial class LetMeCookPage : ContentPage
     {
         try
         {
-            var result = await FilePicker.PickAsync(GetVideoPickOptions($"Selecciona el vídeo del paso {numeroPaso}"));
+            var result = await FilePicker.PickAsync(GetVideoPickOptions($"Selecciona un vídeo para el paso {numeroPaso}"));
 
             if (result == null)
                 return;
@@ -177,27 +213,57 @@ public partial class LetMeCookPage : ContentPage
             }
 
             using var ms = new MemoryStream();
-            byte[] buffer = new byte[81920];
-            long totalBytes = 0;
-            int bytesRead;
+            await stream.CopyToAsync(ms);
+            string base64 = Convert.ToBase64String(ms.ToArray());
+            string nombre = result.FileName;
+            string tipo = result.ContentType ?? "video/mp4";
 
-            while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            // ASIGNAR AL PRIMER SLOT VACÍO
+            if (paso.Video1 == null)
             {
-                totalBytes += bytesRead;
-
-                if (totalBytes > MAX_VIDEO_SIZE_BYTES)
-                {
-                    await DisplayAlertAsync("Vídeo demasiado grande", "El vídeo no puede superar los 30 MB.", "OK");
-                    return;
-                }
-
-                await ms.WriteAsync(buffer, 0, bytesRead);
+                paso.Video1 = base64;
+                paso.Video1Nombre = nombre;
+                paso.Video1Tipo = tipo;
+            }
+            else if (paso.Video2 == null)
+            {
+                paso.Video2 = base64;
+                paso.Video2Nombre = nombre;
+                paso.Video2Tipo = tipo;
+            }
+            else if (paso.Video3 == null)
+            {
+                paso.Video3 = base64;
+                paso.Video3Nombre = nombre;
+                paso.Video3Tipo = tipo;
+            }
+            else if (paso.Video4 == null)
+            {
+                paso.Video4 = base64;
+                paso.Video4Nombre = nombre;
+                paso.Video4Tipo = tipo;
+            }
+            else if (paso.Video5 == null)
+            {
+                paso.Video5 = base64;
+                paso.Video5Nombre = nombre;
+                paso.Video5Tipo = tipo;
+            }
+            else
+            {
+                await DisplayAlertAsync("Límite alcanzado", "Solo puedes añadir hasta 5 vídeos por paso.", "OK");
+                return;
             }
 
-            paso.Video = Convert.ToBase64String(ms.ToArray());
-            paso.VideoNombreArchivo = result.FileName;
-            paso.VideoContentType = string.IsNullOrWhiteSpace(result.ContentType) ? "video/mp4" : result.ContentType;
-            videoLabel.Text = result.FileName;
+            // ACTUALIZAR LABEL
+            videoLabel.Text = string.Join("\n", new[]
+            {
+                paso.Video1Nombre,
+                paso.Video2Nombre,
+                paso.Video3Nombre,
+                paso.Video4Nombre,
+                paso.Video5Nombre
+            }.Where(x => !string.IsNullOrWhiteSpace(x)));
         }
         catch
         {
@@ -226,10 +292,20 @@ public partial class LetMeCookPage : ContentPage
 
         foreach (var paso in _pasos)
         {
-            if (!string.IsNullOrWhiteSpace(paso.Descripcion))
+            bool tieneTexto =
+                !string.IsNullOrWhiteSpace(paso.Descripcion);
+
+            bool tieneVideo =
+                paso.Video1 != null ||
+                paso.Video2 != null ||
+                paso.Video3 != null ||
+                paso.Video4 != null ||
+                paso.Video5 != null;
+
+            if (tieneTexto)
                 puntos += 2;
 
-            if (!string.IsNullOrWhiteSpace(paso.Video))
+            if (tieneVideo)
                 puntos += 3;
         }
 
@@ -247,7 +323,13 @@ public partial class LetMeCookPage : ContentPage
             return;
 
         var pasosValidos = _pasos
-            .Where(p => !string.IsNullOrWhiteSpace(p.Descripcion) || !string.IsNullOrWhiteSpace(p.Video))
+            .Where(p =>
+                !string.IsNullOrWhiteSpace(p.Descripcion) ||
+                p.Video1 != null ||
+                p.Video2 != null ||
+                p.Video3 != null ||
+                p.Video4 != null ||
+                p.Video5 != null)
             .ToList();
 
         if (pasosValidos.Count == 0)
