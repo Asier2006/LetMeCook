@@ -18,6 +18,12 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
+		
+		<!-- Exportar APK -->
+		<AndroidPackageFormat>apk</AndroidPackageFormat>
+
+
+
 		<!-- Display name -->
 		<ApplicationTitle>MiniTFG</ApplicationTitle>
 

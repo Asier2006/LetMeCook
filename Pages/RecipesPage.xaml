@@ -112,7 +112,7 @@
                 </Label>
 
                 <Entry x:Name="OrigenEntry"
-       Placeholder="Buscar origen: es → España"
+       Placeholder="Buscar origen: es  España"
        FontSize="18"
        TextChanged="OnOrigenTextChanged" />
 
@@ -120,8 +120,7 @@
             Wrap="Wrap"
             Direction="Row" />
 
-                <CollectionView ItemsSource="{Binding OrigenSugerencias}"
-                HeightRequest="Auto"
+                <CollectionView ItemsSource="{Binding OrigenSugerencias}"           
                 SelectionMode="None">
                     <CollectionView.ItemsLayout>
                         <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10" />
@@ -167,7 +166,7 @@
             Direction="Row" />
 
                 <CollectionView ItemsSource="{Binding TipoCocinaSugerencias}"
-                HeightRequest="Auto"
+                
                 SelectionMode="None">
                     <CollectionView.ItemsLayout>
                         <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10" />
@@ -213,7 +212,7 @@
             Direction="Row" />
 
                 <CollectionView ItemsSource="{Binding IngredienteSugerencias}"
-                HeightRequest="Auto"
+                
                 SelectionMode="None">
                     <CollectionView.ItemsLayout>
                         <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10" />

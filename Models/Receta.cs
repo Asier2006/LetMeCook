@@ -24,6 +24,28 @@ namespace MiniTFG
         public string TipoCocina { get; set; }
         public string IngredientePrincipal { get; set; }
 
+        // ===============================
+        // ETIQUETAS PRINCIPALES PARA HOMEPAGE
+        // ===============================
+        [JsonIgnore]
+        public string OrigenPrincipal =>
+            string.IsNullOrWhiteSpace(OrigenDelPlato)
+                ? null
+                : OrigenDelPlato.Split(',')[0].Trim();
+
+        [JsonIgnore]
+        public string TipoCocinaPrincipal =>
+            string.IsNullOrWhiteSpace(TipoCocina)
+                ? null
+                : TipoCocina.Split(',')[0].Trim();
+
+        [JsonIgnore]
+        public string IngredientePrincipalSimple =>
+            string.IsNullOrWhiteSpace(IngredientePrincipal)
+                ? null
+                : IngredientePrincipal.Split(',')[0].Trim();
+
+
         // Alérgenos y preferencias guardados como booleanos en MySQL.
         public bool Gluten { get; set; }
         public bool Lactosa { get; set; }
