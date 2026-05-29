@@ -140,67 +140,72 @@ public class PasoDataTemplateSelector : DataTemplateSelector
     {
         _pasoTemplate = new DataTemplate(() =>
         {
-            var grid = new Grid
+            var layout = new VerticalStackLayout
             {
-                RowDefinitions =
-                {
-                    new RowDefinition(GridLength.Auto),
-                    new RowDefinition(GridLength.Star),
-                    new RowDefinition(GridLength.Auto)
-                },
-                Padding = new Thickness(15),
-                RowSpacing = 10
+                Padding = 20,
+                Spacing = 20
             };
 
+            // TÍTULO DEL PASO (GRANDE, NARANJA)
             var stepLabel = new Label
             {
-                FontSize = 22,
-                TextColor = Color.FromArgb("#9C40F7"),
+                FontSize = 26,
+                TextColor = Color.FromArgb("#FAC26C"),
                 FontAttributes = FontAttributes.Bold,
                 HorizontalOptions = LayoutOptions.Center
             };
             stepLabel.SetBinding(Label.TextProperty, "NumeroPaso", stringFormat: "Paso {0}");
-            Grid.SetRow(stepLabel, 0);
+            layout.Children.Add(stepLabel);
 
-            var videoBorder = new Border
-            {
-                StrokeThickness = 0,
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 15 },
-                BackgroundColor = Color.FromArgb("#333333"),
-                VerticalOptions = LayoutOptions.Fill,
-                HorizontalOptions = LayoutOptions.Fill
-            };
-            var videoGrid = new Grid();
-            videoGrid.SetBinding(BindableObject.BindingContextProperty, ".");
-            var playLabel = new Label
-            {
-                Text = "▶",
-                FontSize = 60,
-                TextColor = Colors.White,
-                Opacity = 0.7,
-                HorizontalOptions = LayoutOptions.Center,
-                VerticalOptions = LayoutOptions.Center
-            };
-            videoGrid.Children.Add(playLabel);
-            videoGrid.GestureRecognizers.Add(new TapGestureRecognizer { Command = new Command(() => videoTapped(videoGrid, EventArgs.Empty)) });
-            videoBorder.Content = videoGrid;
-            Grid.SetRow(videoBorder, 1);
-
+            // DESCRIPCIÓN DEL PASO (MÁS PEQUEÑA)
             var descLabel = new Label
             {
                 FontSize = 16,
                 TextColor = Colors.White,
                 HorizontalTextAlignment = TextAlignment.Center,
-                Margin = new Thickness(10)
+                Margin = new Thickness(10, 0)
             };
             descLabel.SetBinding(Label.TextProperty, "Descripcion");
-            Grid.SetRow(descLabel, 2);
+            layout.Children.Add(descLabel);
 
-            grid.Children.Add(stepLabel);
-            grid.Children.Add(videoBorder);
-            grid.Children.Add(descLabel);
+            // CONTENEDOR DE VÍDEO PEQUEÑO CON PLAY
+            var videoBorder = new Border
+            {
+                StrokeThickness = 0,
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 15 },
+                BackgroundColor = Color.FromArgb("#333333"),
+                VerticalOptions = LayoutOptions.Center,
+                HorizontalOptions = LayoutOptions.Center,
+                HeightRequest = 160,
+                WidthRequest = 220,
+                Margin = new Thickness(0, 10)
+            };
 
-            return grid;
+            var videoGrid = new Grid();
+            videoGrid.SetBinding(BindableObject.BindingContextProperty, ".");
+
+            var playLabel = new Label
+            {
+                Text = "▶",
+                FontSize = 48,
+                TextColor = Colors.White,
+                Opacity = 0.8,
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center
+            };
+
+            videoGrid.Children.Add(playLabel);
+
+            videoGrid.GestureRecognizers.Add(new TapGestureRecognizer
+            {
+                Command = new Command(() => videoTapped(videoGrid, EventArgs.Empty))
+            });
+
+            videoBorder.Content = videoGrid;
+
+            layout.Children.Add(videoBorder);
+
+            return layout;
         });
 
         _completadoTemplate = new DataTemplate(() =>
@@ -208,7 +213,7 @@ public class PasoDataTemplateSelector : DataTemplateSelector
             var layout = new VerticalStackLayout
             {
                 VerticalOptions = LayoutOptions.Center,
-                HorizontalOptions = LayoutOptions.Center,
+                HorizontalOptions = LayoutOptions.Center, // ← AQUÍ EL CAMBIO: LayoutOptions.Center
                 Spacing = 20,
                 Padding = new Thickness(30)
             };
@@ -232,7 +237,7 @@ public class PasoDataTemplateSelector : DataTemplateSelector
             var btn = new Button
             {
                 Text = "Completado",
-                BackgroundColor = Color.FromArgb("#9C40F7"),
+                BackgroundColor = Color.FromArgb("#FAC26C"),
                 TextColor = Colors.White,
                 FontAttributes = FontAttributes.Bold,
                 CornerRadius = 15,

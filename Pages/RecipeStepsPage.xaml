@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Vista comentada: Vista de carrusel de pasos de una receta. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MiniTFG.RecipeStepsPage"
@@ -8,25 +7,28 @@
 
     <Grid RowDefinitions="Auto,*,Auto">
 
+        <!-- TÍTULO DE LA RECETA -->
         <Label x:Name="TituloLabel"
                Grid.Row="0"
-               FontSize="22"
+               FontSize="26"
                FontAttributes="Bold"
-               TextColor="White"
+               TextColor="#FAC26C"
                HorizontalOptions="Center"
-               Margin="0,15" />
+               Margin="0,20" />
 
+        <!-- CARRUSEL DE PASOS -->
         <CarouselView x:Name="PasosCarousel"
                       Grid.Row="1"
                       Loop="False"
                       PeekAreaInsets="0"
                       IndicatorView="indicatorView" />
 
+        <!-- INDICADORES -->
         <IndicatorView x:Name="indicatorView"
                        Grid.Row="2"
                        HorizontalOptions="Center"
                        IndicatorColor="Gray"
-                       SelectedIndicatorColor="#9C40F7"
+                       SelectedIndicatorColor="#FAC26C"
                        Margin="0,5,0,15" />
     </Grid>
 </ContentPage>
