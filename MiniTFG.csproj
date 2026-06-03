@@ -28,11 +28,11 @@
 		<ApplicationTitle>LetMeCook!</ApplicationTitle>
 
 		<!-- App Identifier -->
-		<ApplicationId>LetMeCook!</ApplicationId>
+		<ApplicationId>com.tfg.letmecook</ApplicationId>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-		<ApplicationVersion>1</ApplicationVersion>
+		<ApplicationVersion>2</ApplicationVersion>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>
@@ -46,8 +46,7 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\Manoplas.svg" ForegroundFile="Resources\AppIcon\Manoplas.svg"/>
-
+		<MauiIcon Include="Resources\AppIcon\manoplas.jpg" BaseSize="480,480" />
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
 
