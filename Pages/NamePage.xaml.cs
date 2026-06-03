@@ -60,7 +60,7 @@ public partial class NamePage : ContentPage
             return;
         }
 
-        App.UsuarioTemporal = new Usuario
+        App.UsuarioTemporal = new Usuarios
         {
             Nombre = nombre,
             Correo = correo,

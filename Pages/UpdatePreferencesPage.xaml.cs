@@ -8,7 +8,7 @@ public partial class UpdatePreferencesPage : ContentPage
     {
         InitializeComponent();
 
-        var u = App.UsuarioActual ?? new Usuario();
+        var u = App.UsuarioActual ?? new Usuarios();
 
         Preferencias = new List<AlergenosPreferencias>
         {

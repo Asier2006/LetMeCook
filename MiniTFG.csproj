@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
@@ -25,10 +25,10 @@
 
 
 		<!-- Display name -->
-		<ApplicationTitle>MiniTFG</ApplicationTitle>
+		<ApplicationTitle>LetMeCook!</ApplicationTitle>
 
 		<!-- App Identifier -->
-		<ApplicationId>com.companyname.minitfg</ApplicationId>
+		<ApplicationId>LetMeCook!</ApplicationId>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
@@ -46,7 +46,7 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+		<MauiIcon Include="Resources\AppIcon\Manoplas.svg" ForegroundFile="Resources\AppIcon\Manoplas.svg"/>
 
 		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />

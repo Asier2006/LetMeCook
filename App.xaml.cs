@@ -8,10 +8,10 @@ namespace MiniTFG
         public const string RememberUserIdKey = "remember_user_id";
 
         // UsuarioTemporal se usa durante el registro multipantalla.
-        public static Usuario UsuarioTemporal { get; set; }
+        public static Usuarios UsuarioTemporal { get; set; }
 
         // UsuarioActual representa la sesión activa. Si es null, el usuario navega como invitado.
-        public static Usuario UsuarioActual { get; set; }
+        public static Usuarios UsuarioActual { get; set; }
 
         public App()
         {
@@ -66,7 +66,7 @@ namespace MiniTFG
         }
 
         // Solo se guarda el Id: el resto de datos se vuelven a consultar para evitar sesiones obsoletas.
-        public static void GuardarSesionRecordada(Usuario usuario)
+        public static void GuardarSesionRecordada( Usuarios usuario)
         {
             Preferences.Set(RememberUserIdKey, usuario.Id);
         }

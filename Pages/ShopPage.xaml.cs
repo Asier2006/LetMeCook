@@ -131,7 +131,7 @@ public partial class ShopPage : ContentPage, INotifyPropertyChanged
     {
         if (PuntosTotales < skin.Precio)
         {
-            await DisplayAlert("Puntos insuficientes",
+            await DisplayAlertAsync("Puntos insuficientes",
                 $"Necesitas {skin.Precio} puntos, tienes {PuntosTotales}", "OK");
             return;
         }
@@ -155,7 +155,7 @@ public partial class ShopPage : ContentPage, INotifyPropertyChanged
 
         if (!ok)
         {
-            await DisplayAlert("Error", "No se pudo activar la skin.", "OK");
+            await DisplayAlertAsync("Error", "No se pudo activar la skin.", "OK");
             return;
         }
 
@@ -171,12 +171,18 @@ public partial class ShopPage : ContentPage, INotifyPropertyChanged
 
         if (bio.Length > 160)
         {
-            await DisplayAlert("Error", "La biografía no puede superar los 160 caracteres.", "OK");
+            await DisplayAlertAsync("Error", "La biografía no puede superar los 160 caracteres.", "OK");
             return;
         }
 
+
+
+
         App.UsuarioActual.Descripcion = bio;
 
-        await DisplayAlert("Guardado", "Tu biografía ha sido actualizada (solo local).", "OK");
+
+        var api = new DatabaseService();
+        await api.UpdateDescripcionUsuarioAsync(App.UsuarioActual);
+        await DisplayAlertAsync("Guardado", "Tu biografía ha sido actualizada.", "OK");
     }
 }

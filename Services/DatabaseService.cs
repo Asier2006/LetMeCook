@@ -83,9 +83,9 @@ namespace MiniTFG
 
         //  USUARIOS
 
-        public async Task<Usuario[]> GetUsuariosAsync()
+        public async Task<Usuarios[]> GetUsuariosAsync()
         {
-            var list = new List<Usuario>();
+            var list = new List<Usuarios>();
             await using var conn = Connect();
             await conn.OpenAsync();
             await using var cmd = new MySqlCommand("SELECT * FROM Usuarios", conn);
@@ -95,7 +95,7 @@ namespace MiniTFG
             return list.ToArray();
         }
 
-        public async Task<Usuario> GetUsuarioByIdAsync(int id)
+        public async Task<Usuarios> GetUsuarioByIdAsync(int id)
         {
             await using var conn = Connect();
             await conn.OpenAsync();
@@ -105,7 +105,7 @@ namespace MiniTFG
             return await reader.ReadAsync() ? MapUsuario(reader) : null;
         }
 
-        public async Task<Usuario> PostUsuarioAsync(Usuario u)
+        public async Task<Usuarios> PostUsuarioAsync(Usuarios u)
         {
             await using var conn = Connect();
             await conn.OpenAsync();
@@ -126,7 +126,23 @@ namespace MiniTFG
             return u;
         }
 
-        public async Task<bool> UpdateUsuarioAsync(Usuario u)
+
+        public async Task<bool> UpdateDescripcionUsuarioAsync(Usuarios u)
+        {
+            await using var conn = Connect();
+            await conn.OpenAsync();
+            var sql = @"UPDATE Usuarios SET
+                        Descripcion=@Descripcion
+                        WHERE Id=@Id";
+            await using var cmd = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@Id", u.Id);
+            cmd.Parameters.AddWithValue("@Descripcion", u.Descripcion);
+            return await cmd.ExecuteNonQueryAsync() > 0;
+        }
+
+
+
+        public async Task<bool> UpdateUsuarioAsync( Usuarios u)
         {
             await using var conn = Connect();
             await conn.OpenAsync();
@@ -143,7 +159,7 @@ namespace MiniTFG
             return await cmd.ExecuteNonQueryAsync() > 0;
         }
 
-        public async Task<Usuario> LoginAsync(string correo, string contrasena)
+        public async Task<Usuarios> LoginAsync(string correo, string contrasena)
         {
             await using var conn = Connect();
             await conn.OpenAsync();
@@ -205,7 +221,7 @@ namespace MiniTFG
             return await cmd.ExecuteNonQueryAsync() > 0;
         }
 
-        public async Task<bool> UpdatePreferenciasUsuarioAsync(Usuario u)
+        public async Task<bool> UpdatePreferenciasUsuarioAsync(Usuarios u)
         {
             await using var conn = Connect();
             await conn.OpenAsync();
@@ -1150,7 +1166,7 @@ namespace MiniTFG
             return false;
         }
 
-        private static Usuario MapUsuario(MySqlDataReader r) => new Usuario
+        private static Usuarios MapUsuario(MySqlDataReader r) => new Usuarios
         {
             Id                 = r.GetInt32("Id"),
             Nombre             = r.IsDBNull(r.GetOrdinal("Nombre"))    ? null : r.GetString("Nombre"),
@@ -1216,7 +1232,7 @@ namespace MiniTFG
             Puntuacion         = r.GetInt32("Puntuacion")
         };
 
-        private static void AddUsuarioParams(MySqlCommand cmd, Usuario u)
+        private static void AddUsuarioParams(MySqlCommand cmd, Usuarios u)
         {
             cmd.Parameters.AddWithValue("@Nombre",      u.Nombre      ?? (object)DBNull.Value);
             cmd.Parameters.AddWithValue("@Foto",        string.IsNullOrWhiteSpace(u.Foto) ? "user.png" : u.Foto);

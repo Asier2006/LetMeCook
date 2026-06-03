@@ -74,7 +74,7 @@ public partial class HomePage : ContentPage
             await Shell.Current.GoToAsync($"other?usuarioId={creadorId}");
     }
 
-    private List<Receta> FiltrarPorPreferencias(List<Receta> recetas, Usuario usuario)
+    private List<Receta> FiltrarPorPreferencias(List<Receta> recetas, Usuarios usuario)
     {
         var filtradas = recetas.AsEnumerable();
 

@@ -5,7 +5,7 @@
 
     <Grid RowDefinitions="Auto,*,Auto">
 
-        <!-- 🔶 BARRA SUPERIOR (FILTROS + BÚSQUEDA GLOBAL) -->
+        <!-- BARRA SUPERIOR (FILTROS + BÚSQUEDA GLOBAL) -->
         <ScrollView Grid.Row="0"
             Orientation="Vertical"
             VerticalScrollBarVisibility="Always"
@@ -15,7 +15,7 @@
                          BackgroundColor="#fff2db"
                          Padding="10">
 
-                <!-- 🔶 ENTRY DE BÚSQUEDA GLOBAL -->
+                <!-- ENTRY DE BÚSQUEDA GLOBAL -->
                 <Border StrokeThickness="0"
                 StrokeShape="RoundRectangle 20"
                 BackgroundColor="#E0A85A"
@@ -32,26 +32,27 @@
                    Focused="OnToggleFiltros" />
                 </Border>
 
-                <!-- 🔶 PANEL DE FILTROS -->
+                <!-- PANEL DE FILTROS -->
                 <VerticalStackLayout x:Name="PanelFiltros"
                              IsVisible="False"
                              Spacing="10"
                              Padding="5,10">
 
-                    <!-- 🔙 BOTÓN ATRÁS -->
+                    <!-- BOTÓN ATRÁS -->
                     <Frame HeightRequest="20"
-       WidthRequest="20"
-       Padding="0"
-       CornerRadius="40"
-       IsClippedToBounds="True"
-       BackgroundColor="Transparent"
-       HorizontalOptions="Start"
-       VerticalOptions="Center">
+                        WidthRequest="20"
+                        Padding="0"
+                        CornerRadius="40"
+                        IsClippedToBounds="True"
+                        BackgroundColor="Transparent"
+                        HorizontalOptions="Start"
+                        VerticalOptions="Center">
 
                         <ImageButton Source="back.png"
-                 BackgroundColor="Transparent"
-                 Aspect="AspectFill"
-                 Clicked="OnCerrarFiltrosClicked" />
+                        BackgroundColor="Transparent"
+                        Aspect="AspectFill"
+                        Clicked="OnCerrarFiltrosClicked" />
+                   
                     </Frame>
 
 
@@ -140,6 +141,34 @@
 
                     <FlexLayout x:Name="TipoCocinaTagsLayout" Wrap="Wrap" Direction="Row" />
 
+                    <CollectionView ItemsSource="{Binding TipoCocinaSugerencias}"
+                        HeightRequest="70"
+                        SelectionMode="None">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Horizontal" />
+                        </CollectionView.ItemsLayout>
+
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 12"
+                                        BackgroundColor="#FAC26C"
+                                        Padding="10,5"
+                                        Margin="3">
+
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnTipoCocinaSugerenciaTapped" />
+                                    </Border.GestureRecognizers>
+
+                                    <Label Text="{Binding .}"
+                                               TextColor="White"
+                                               FontSize="12" />
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    
+                    
                     <!-- INGREDIENTES -->
                     <Label Text="Ingredientes"
                    TextColor="black"
@@ -155,6 +184,34 @@
                     </Border>
 
                     <FlexLayout x:Name="IngredienteTagsLayout" Wrap="Wrap" Direction="Row" />
+
+                    <!-- SUGERENCIAS INGREDIENTES -->
+                    <CollectionView ItemsSource="{Binding IngredienteSugerencias}"
+                         HeightRequest="70"
+                         SelectionMode="None">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Horizontal" />
+                        </CollectionView.ItemsLayout>
+
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 12"
+                                        BackgroundColor="#FAC26C"
+                                        Padding="10,5"
+                                        Margin="3">
+
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnIngredienteSugerenciaTapped" />
+                                    </Border.GestureRecognizers>
+
+                                    <Label Text="{Binding .}"
+                                           TextColor="White"
+                                           FontSize="12" />
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
 
                     <!-- BOTONES DE FILTRO -->
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,5,0,0">
