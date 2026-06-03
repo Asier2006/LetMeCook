@@ -38,7 +38,6 @@ public partial class RecipeStepsPage : ContentPage
         InitializeComponent();
     }
 
-    // Espera a recibir recetaId y usuarioId desde Shell antes de consultar la base de datos.
     private void TryCargarPasos()
     {
         if (_recetaId != 0 && _usuarioId != 0 && !_loaded)
@@ -48,7 +47,6 @@ public partial class RecipeStepsPage : ContentPage
         }
     }
 
-    // Lee los pasos de MySQL y reconstruye los vídeos Base64 como archivos temporales reproducibles.
     private async void CargarPasos()
     {
         var api = new DatabaseService();
@@ -58,53 +56,212 @@ public partial class RecipeStepsPage : ContentPage
             TituloLabel.Text = receta.Titulo;
 
         var pasos = await api.GetPasosRecetaAsync(_recetaId);
+        PasosContainer.Children.Clear();
 
-        foreach (var paso in pasos)
+        foreach (var paso in pasos.OrderBy(p => p.NumeroPaso))
         {
-            if (!string.IsNullOrEmpty(paso.Video))
-            {
-                try
-                {
-                    var bytes = Convert.FromBase64String(paso.Video);
-                    var nombreArchivo = string.IsNullOrWhiteSpace(paso.VideoNombreArchivo)
-                        ? $"paso_{paso.Id}.mp4"
-                        : $"{paso.Id}_{Path.GetFileName(paso.VideoNombreArchivo)}";
+            foreach (var video in paso.Videos.OrderBy(v => v.Orden))
+                video.VideoFilePath = await CrearArchivoTemporalVideoAsync(video, paso.Id);
 
-                    var filePath = Path.Combine(FileSystem.CacheDirectory, nombreArchivo);
-                    await File.WriteAllBytesAsync(filePath, bytes);
-                    paso.VideoFilePath = filePath;
-                }
-                catch
-                {
-                    paso.VideoFilePath = null;
-                }
-            }
+            PasosContainer.Children.Add(CrearPasoCard(paso));
         }
-
-        var items = pasos.OrderBy(p => p.NumeroPaso).ToList();
-
-        // Añadir item final "Completado"
-        items.Add(new PasoReceta
-        {
-            NumeroPaso = -1,
-            Descripcion = "__COMPLETADO__"
-        });
-
-        PasosCarousel.ItemTemplate = new PasoDataTemplateSelector(OnVideoTapped, OnCompletadoClicked);
-        PasosCarousel.ItemsSource = items;
     }
 
-    private async void OnVideoTapped(object sender, EventArgs e)
+    private View CrearPasoCard(PasoReceta paso)
     {
-        var element = (View)sender;
-        var paso = (PasoReceta)element.BindingContext;
-
-        if (!string.IsNullOrEmpty(paso.VideoFilePath))
+        var layout = new VerticalStackLayout
         {
-            await Launcher.OpenAsync(new OpenFileRequest
+            Spacing = 14
+        };
+
+        //
+        // 🔶 1. TÍTULO DEL PASO
+        //
+        layout.Children.Add(new Label
+        {
+            Text = $"Paso {paso.NumeroPaso}",
+            FontSize = 26,
+            TextColor = Color.FromArgb("#FAC26C"),
+            FontAttributes = FontAttributes.Bold,
+            HorizontalOptions = LayoutOptions.Start
+        });
+
+        //
+        // 🔶 2. SEPARADOR
+        //
+        layout.Children.Add(new BoxView
+        {
+            HeightRequest = 2,
+            BackgroundColor = Color.FromArgb("#FAC26C"),
+            Opacity = 0.6,
+            Margin = new Thickness(0, 4)
+        });
+
+        //
+        // 🔶 3. DESCRIPCIÓN DEL PASO
+        //
+        layout.Children.Add(new Label
+        {
+            Text = string.IsNullOrWhiteSpace(paso.Descripcion) ? "Sin descripción" : paso.Descripcion,
+            FontSize = 18,
+            TextColor = Colors.White,
+            HorizontalTextAlignment = TextAlignment.Start,
+            LineBreakMode = LineBreakMode.WordWrap
+        });
+
+        //
+        // 🔶 4. VIDEOS EN SCROLL HORIZONTAL
+        //
+        layout.Children.Add(CrearVideosScroll(paso));
+
+
+        
+
+        //
+        // 🔶 TARJETA FINAL
+        //
+        return new Border
+        {
+            StrokeThickness = 0,
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 18 },
+            BackgroundColor = Color.FromArgb("#2D2D2D"),
+            Padding = new Thickness(16),
+            Content = layout
+        };
+    }
+
+
+    private View CrearVideosScroll(PasoReceta paso)
+    {
+        var videosLayout = new HorizontalStackLayout
+        {
+            Spacing = 12,
+            HorizontalOptions = LayoutOptions.Start,   // 👈 IMPORTANTE
+            VerticalOptions = LayoutOptions.Start
+        };
+
+        var videos = paso.Videos
+            .Where(v => !string.IsNullOrWhiteSpace(v.VideoFilePath))
+            .OrderBy(v => v.Orden)
+            .ToList();
+
+        if (videos.Count == 0)
+        {
+            videosLayout.Children.Add(new Border
             {
-                File = new ReadOnlyFile(paso.VideoFilePath)
+                StrokeThickness = 0,
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 14 },
+                BackgroundColor = Color.FromArgb("#333333"),
+                HeightRequest = 150,
+                WidthRequest = 220,
+                Content = new Label
+                {
+                    Text = "Sin vídeos",
+                    TextColor = Colors.LightGray,
+                    FontSize = 15,
+                    HorizontalOptions = LayoutOptions.Center,
+                    VerticalOptions = LayoutOptions.Center
+                }
             });
+        }
+        else
+        {
+            foreach (var video in videos)
+                videosLayout.Children.Add(CrearVideoCard(video));   // cada card ya tiene WidthRequest = 220
+        }
+
+        return new ScrollView
+        {
+            Orientation = ScrollOrientation.Horizontal,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Always, // para que veas que hay scroll
+            Content = videosLayout
+        };
+    }
+
+
+    private View CrearVideoCard(PasoRecetaVideo video)
+    {
+        var grid = new Grid();
+
+        // Icono de play grande
+        grid.Children.Add(new Label
+        {
+            Text = "▶",
+            FontSize = 46,
+            TextColor = Colors.White,
+            Opacity = 0.85,
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center
+        });
+
+        // Texto "Vídeo X"
+        grid.Children.Add(new Label
+        {
+            Text = video.Orden > 0 ? $"Vídeo {video.Orden}" : "Vídeo",
+            FontSize = 13,
+            TextColor = Colors.White,
+            Opacity = 0.8,
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.End,
+            Margin = new Thickness(0, 0, 0, 12)
+        });
+
+        // Al pulsar → abre el vídeo con el reproductor del sistema (como antes)
+        grid.GestureRecognizers.Add(new TapGestureRecognizer
+        {
+            Command = new Command(() => AbrirVideo(video))
+        });
+
+        return new Border
+        {
+            StrokeThickness = 0,
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 15 },
+            BackgroundColor = Color.FromArgb("#333333"),
+            HeightRequest = 150,
+            WidthRequest = 220,
+            Content = grid
+        };
+    }
+
+
+
+
+    private async void AbrirVideo(PasoRecetaVideo video)
+    {
+        if (string.IsNullOrWhiteSpace(video.VideoFilePath))
+            return;
+
+        await Launcher.OpenAsync(new OpenFileRequest
+        {
+            File = new ReadOnlyFile(video.VideoFilePath)
+        });
+    }
+
+    private static async Task<string> CrearArchivoTemporalVideoAsync(PasoRecetaVideo video, int pasoId)
+    {
+        if (string.IsNullOrWhiteSpace(video.Video))
+            return null;
+
+        try
+        {
+            var base64 = video.Video.Trim();
+            var commaIndex = base64.IndexOf(',');
+            if (base64.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && commaIndex >= 0)
+                base64 = base64[(commaIndex + 1)..];
+
+            var bytes = Convert.FromBase64String(base64);
+            var extension = Path.GetExtension(video.VideoNombreArchivo);
+            if (string.IsNullOrWhiteSpace(extension))
+                extension = ".mp4";
+
+            var nombreArchivo = $"paso_{pasoId}_video_{video.Orden}{extension}";
+            var filePath = Path.Combine(FileSystem.CacheDirectory, nombreArchivo);
+            await File.WriteAllBytesAsync(filePath, bytes);
+            return filePath;
+        }
+        catch
+        {
+            return null;
         }
     }
 
@@ -125,135 +282,5 @@ public partial class RecipeStepsPage : ContentPage
         }
 
         await Shell.Current.GoToAsync("//home");
-    }
-}
-
-/// <summary>
-/// Selecciona la plantilla visual de paso normal o pantalla final de completado.
-/// </summary>
-public class PasoDataTemplateSelector : DataTemplateSelector
-{
-    private readonly DataTemplate _pasoTemplate;
-    private readonly DataTemplate _completadoTemplate;
-
-    public PasoDataTemplateSelector(EventHandler videoTapped, EventHandler completadoClicked)
-    {
-        _pasoTemplate = new DataTemplate(() =>
-        {
-            var layout = new VerticalStackLayout
-            {
-                Padding = 20,
-                Spacing = 20
-            };
-
-            // TÍTULO DEL PASO (GRANDE, NARANJA)
-            var stepLabel = new Label
-            {
-                FontSize = 26,
-                TextColor = Color.FromArgb("#FAC26C"),
-                FontAttributes = FontAttributes.Bold,
-                HorizontalOptions = LayoutOptions.Center
-            };
-            stepLabel.SetBinding(Label.TextProperty, "NumeroPaso", stringFormat: "Paso {0}");
-            layout.Children.Add(stepLabel);
-
-            // DESCRIPCIÓN DEL PASO (MÁS PEQUEÑA)
-            var descLabel = new Label
-            {
-                FontSize = 16,
-                TextColor = Colors.White,
-                HorizontalTextAlignment = TextAlignment.Center,
-                Margin = new Thickness(10, 0)
-            };
-            descLabel.SetBinding(Label.TextProperty, "Descripcion");
-            layout.Children.Add(descLabel);
-
-            // CONTENEDOR DE VÍDEO PEQUEÑO CON PLAY
-            var videoBorder = new Border
-            {
-                StrokeThickness = 0,
-                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 15 },
-                BackgroundColor = Color.FromArgb("#333333"),
-                VerticalOptions = LayoutOptions.Center,
-                HorizontalOptions = LayoutOptions.Center,
-                HeightRequest = 160,
-                WidthRequest = 220,
-                Margin = new Thickness(0, 10)
-            };
-
-            var videoGrid = new Grid();
-            videoGrid.SetBinding(BindableObject.BindingContextProperty, ".");
-
-            var playLabel = new Label
-            {
-                Text = "▶",
-                FontSize = 48,
-                TextColor = Colors.White,
-                Opacity = 0.8,
-                HorizontalOptions = LayoutOptions.Center,
-                VerticalOptions = LayoutOptions.Center
-            };
-
-            videoGrid.Children.Add(playLabel);
-
-            videoGrid.GestureRecognizers.Add(new TapGestureRecognizer
-            {
-                Command = new Command(() => videoTapped(videoGrid, EventArgs.Empty))
-            });
-
-            videoBorder.Content = videoGrid;
-
-            layout.Children.Add(videoBorder);
-
-            return layout;
-        });
-
-        _completadoTemplate = new DataTemplate(() =>
-        {
-            var layout = new VerticalStackLayout
-            {
-                VerticalOptions = LayoutOptions.Center,
-                HorizontalOptions = LayoutOptions.Center, // ← AQUÍ EL CAMBIO: LayoutOptions.Center
-                Spacing = 20,
-                Padding = new Thickness(30)
-            };
-
-            layout.Children.Add(new Label
-            {
-                Text = "🎉",
-                FontSize = 60,
-                HorizontalOptions = LayoutOptions.Center
-            });
-
-            layout.Children.Add(new Label
-            {
-                Text = "¡Has completado la receta!",
-                FontSize = 24,
-                FontAttributes = FontAttributes.Bold,
-                TextColor = Colors.White,
-                HorizontalOptions = LayoutOptions.Center
-            });
-
-            var btn = new Button
-            {
-                Text = "Completado",
-                BackgroundColor = Color.FromArgb("#FAC26C"),
-                TextColor = Colors.White,
-                FontAttributes = FontAttributes.Bold,
-                CornerRadius = 15,
-                HeightRequest = 55,
-                FontSize = 18
-            };
-            btn.Clicked += completadoClicked;
-            layout.Children.Add(btn);
-
-            return layout;
-        });
-    }
-
-    protected override DataTemplate OnSelectTemplate(object item, BindableObject container)
-    {
-        var paso = (PasoReceta)item;
-        return paso.NumeroPaso == -1 ? _completadoTemplate : _pasoTemplate;
     }
 }

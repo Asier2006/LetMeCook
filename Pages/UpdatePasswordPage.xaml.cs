@@ -1,8 +1,5 @@
 namespace MiniTFG;
 
-/// <summary>
-/// Cambia la contraseña verificando la contraseña anterior.
-/// </summary>
 public partial class UpdatePasswordPage : ContentPage
 {
     public UpdatePasswordPage()

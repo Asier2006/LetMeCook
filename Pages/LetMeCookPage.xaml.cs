@@ -7,7 +7,8 @@ namespace MiniTFG;
 [QueryProperty(nameof(UsuarioId), "usuarioId")]
 public partial class LetMeCookPage : ContentPage
 {
-    private const long MAX_VIDEO_SIZE_BYTES = 30L * 1024L * 1024L;
+    private const long MAX_VIDEO_SIZE_BYTES = 10L * 1024L * 1024L;
+    private const double MAX_VIDEO_DURATION_SECONDS = 5.0;
 
     private readonly List<PasoReceta> _pasos = new();
     private int _recetaId;
@@ -89,7 +90,6 @@ public partial class LetMeCookPage : ContentPage
 
         var layout = new VerticalStackLayout { Spacing = 10 };
 
-        // CABECERA (TÍTULO + ELIMINAR)
         var header = new Grid
         {
             ColumnDefinitions =
@@ -129,7 +129,6 @@ public partial class LetMeCookPage : ContentPage
 
         layout.Children.Add(header);
 
-        // TÍTULO
         var tituloEntry = new Entry
         {
             Placeholder = $"Título o comentario corto del paso {numeroPaso}",
@@ -138,7 +137,6 @@ public partial class LetMeCookPage : ContentPage
             BackgroundColor = Color.FromArgb("#3A3A3A")
         };
 
-        // DESCRIPCIÓN
         var descripcionEditor = new Editor
         {
             Placeholder = "Descripción/comentario opcional (+2 puntos)",
@@ -162,15 +160,6 @@ public partial class LetMeCookPage : ContentPage
         tituloEntry.TextChanged += (_, _) => ActualizarDescripcion();
         descripcionEditor.TextChanged += (_, _) => ActualizarDescripcion();
 
-        // LABEL DE VÍDEOS
-        var videoLabel = new Label
-        {
-            Text = "Sin vídeos",
-            TextColor = Colors.LightGray,
-            FontSize = 13
-        };
-
-        // BOTÓN AÑADIR VÍDEO
         var videoButton = new Button
         {
             Text = "Añadir vídeo (+3 puntos)",
@@ -179,23 +168,37 @@ public partial class LetMeCookPage : ContentPage
             CornerRadius = 8
         };
 
+        var videosLayout = new HorizontalStackLayout
+        {
+            Spacing = 8
+        };
+
+        var videosScroll = new ScrollView
+        {
+            Orientation = ScrollOrientation.Horizontal,
+            Content = videosLayout,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Never
+        };
+
+        RefrescarVideosSeleccionados(paso, videosLayout);
+
         videoButton.Clicked += async (_, _) =>
         {
-            await SeleccionarVideoAsync(paso, videoLabel, numeroPaso);
+            await SeleccionarVideoAsync(paso, videosLayout, numeroPaso);
             ActualizarPuntosPreview();
         };
 
         layout.Children.Add(tituloEntry);
         layout.Children.Add(descripcionEditor);
         layout.Children.Add(videoButton);
-        layout.Children.Add(videoLabel);
+        layout.Children.Add(videosScroll);
 
         card.Content = layout;
         PasosContainer.Children.Add(card);
         ActualizarPuntosPreview();
     }
 
-    private async Task SeleccionarVideoAsync(PasoReceta paso, Label videoLabel, int numeroPaso)
+    private async Task SeleccionarVideoAsync(PasoReceta paso, HorizontalStackLayout videosLayout, int numeroPaso)
     {
         try
         {
@@ -208,66 +211,89 @@ public partial class LetMeCookPage : ContentPage
 
             if (stream.CanSeek && stream.Length > MAX_VIDEO_SIZE_BYTES)
             {
-                await DisplayAlertAsync("Vídeo demasiado grande", "El vídeo no puede superar los 30 MB.", "OK");
+                await DisplayAlertAsync("Vídeo demasiado grande", "El vídeo no puede superar los 10 MB.", "OK");
                 return;
             }
 
             using var ms = new MemoryStream();
             await stream.CopyToAsync(ms);
-            string base64 = Convert.ToBase64String(ms.ToArray());
-            string nombre = result.FileName;
-            string tipo = result.ContentType ?? "video/mp4";
+            var bytes = ms.ToArray();
 
-            // ASIGNAR AL PRIMER SLOT VACÍO
-            if (paso.Video1 == null)
+            if (bytes.Length > MAX_VIDEO_SIZE_BYTES)
             {
-                paso.Video1 = base64;
-                paso.Video1Nombre = nombre;
-                paso.Video1Tipo = tipo;
-            }
-            else if (paso.Video2 == null)
-            {
-                paso.Video2 = base64;
-                paso.Video2Nombre = nombre;
-                paso.Video2Tipo = tipo;
-            }
-            else if (paso.Video3 == null)
-            {
-                paso.Video3 = base64;
-                paso.Video3Nombre = nombre;
-                paso.Video3Tipo = tipo;
-            }
-            else if (paso.Video4 == null)
-            {
-                paso.Video4 = base64;
-                paso.Video4Nombre = nombre;
-                paso.Video4Tipo = tipo;
-            }
-            else if (paso.Video5 == null)
-            {
-                paso.Video5 = base64;
-                paso.Video5Nombre = nombre;
-                paso.Video5Tipo = tipo;
-            }
-            else
-            {
-                await DisplayAlertAsync("Límite alcanzado", "Solo puedes añadir hasta 5 vídeos por paso.", "OK");
+                await DisplayAlertAsync("Vídeo demasiado grande", "El vídeo no puede superar los 10 MB.", "OK");
                 return;
             }
 
-            // ACTUALIZAR LABEL
-            videoLabel.Text = string.Join("\n", new[]
+            if (!TryGetVideoDurationSeconds(bytes, out double duracionSegundos))
             {
-                paso.Video1Nombre,
-                paso.Video2Nombre,
-                paso.Video3Nombre,
-                paso.Video4Nombre,
-                paso.Video5Nombre
-            }.Where(x => !string.IsNullOrWhiteSpace(x)));
+                await DisplayAlertAsync(
+                    "Duración no comprobable",
+                    "No se pudo comprobar la duración. Usa un vídeo MP4, MOV, M4V o 3GP de 5 segundos como máximo.",
+                    "OK");
+                return;
+            }
+
+            if (duracionSegundos > MAX_VIDEO_DURATION_SECONDS + 0.05)
+            {
+                await DisplayAlertAsync(
+                    "Vídeo demasiado largo",
+                    $"El vídeo dura {duracionSegundos:0.##} segundos. La duración máxima permitida es de 5 segundos.",
+                    "OK");
+                return;
+            }
+
+            paso.Videos.Add(new PasoRecetaVideo
+            {
+                Orden = paso.Videos.Count + 1,
+                Video = Convert.ToBase64String(bytes),
+                VideoNombreArchivo = result.FileName,
+                VideoContentType = result.ContentType ?? "video/mp4",
+                DuracionSegundos = Convert.ToDecimal(Math.Round(duracionSegundos, 2))
+            });
+
+            RefrescarVideosSeleccionados(paso, videosLayout);
         }
-        catch
+        catch (Exception ex)
         {
-            await DisplayAlertAsync("Error", "No se pudo seleccionar el vídeo", "OK");
+            await DisplayAlertAsync("Error", $"No se pudo seleccionar el vídeo: {ex.Message}", "OK");
+        }
+    }
+
+    private static void RefrescarVideosSeleccionados(PasoReceta paso, HorizontalStackLayout videosLayout)
+    {
+        videosLayout.Children.Clear();
+
+        if (paso.Videos.Count == 0)
+        {
+            videosLayout.Children.Add(new Label
+            {
+                Text = "Sin vídeos",
+                TextColor = Colors.LightGray,
+                FontSize = 13,
+                VerticalOptions = LayoutOptions.Center
+            });
+            return;
+        }
+
+        foreach (var video in paso.Videos.OrderBy(v => v.Orden))
+        {
+            videosLayout.Children.Add(new Border
+            {
+                StrokeThickness = 0,
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 10 },
+                BackgroundColor = Color.FromArgb("#3A3A3A"),
+                Padding = new Thickness(10, 6),
+                Content = new Label
+                {
+                    Text = $"▶ {video.VideoNombreArchivo}",
+                    TextColor = Colors.White,
+                    FontSize = 12,
+                    LineBreakMode = LineBreakMode.TailTruncation,
+                    MaxLines = 1,
+                    WidthRequest = 170
+                }
+            });
         }
     }
 
@@ -278,10 +304,10 @@ public partial class LetMeCookPage : ContentPage
             PickerTitle = titulo,
             FileTypes = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
             {
-                { DevicePlatform.Android, new[] { "video/*" } },
+                { DevicePlatform.Android, new[] { "video/mp4", "video/quicktime", "video/3gpp" } },
                 { DevicePlatform.iOS, new[] { "public.movie" } },
                 { DevicePlatform.MacCatalyst, new[] { "public.movie" } },
-                { DevicePlatform.WinUI, new[] { ".mp4", ".mov", ".avi", ".mkv", ".webm" } }
+                { DevicePlatform.WinUI, new[] { ".mp4", ".mov", ".m4v", ".3gp" } }
             })
         };
     }
@@ -292,15 +318,8 @@ public partial class LetMeCookPage : ContentPage
 
         foreach (var paso in _pasos)
         {
-            bool tieneTexto =
-                !string.IsNullOrWhiteSpace(paso.Descripcion);
-
-            bool tieneVideo =
-                paso.Video1 != null ||
-                paso.Video2 != null ||
-                paso.Video3 != null ||
-                paso.Video4 != null ||
-                paso.Video5 != null;
+            bool tieneTexto = !string.IsNullOrWhiteSpace(paso.Descripcion);
+            bool tieneVideo = paso.Videos.Count > 0;
 
             if (tieneTexto)
                 puntos += 2;
@@ -323,13 +342,7 @@ public partial class LetMeCookPage : ContentPage
             return;
 
         var pasosValidos = _pasos
-            .Where(p =>
-                !string.IsNullOrWhiteSpace(p.Descripcion) ||
-                p.Video1 != null ||
-                p.Video2 != null ||
-                p.Video3 != null ||
-                p.Video4 != null ||
-                p.Video5 != null)
+            .Where(p => !string.IsNullOrWhiteSpace(p.Descripcion) || p.Videos.Count > 0)
             .ToList();
 
         if (pasosValidos.Count == 0)
@@ -349,7 +362,10 @@ public partial class LetMeCookPage : ContentPage
             {
                 paso.RecetaId = _recetaId;
                 paso.NumeroPaso = numero++;
-                await api.PostPasoRecetaAsync(paso);
+
+                var pasoGuardado = await api.PostPasoRecetaAsync(paso);
+                if (pasoGuardado == null || pasoGuardado.Id <= 0)
+                    throw new InvalidOperationException($"No se pudo guardar el paso {paso.NumeroPaso}.");
             }
 
             int puntos = CalcularPuntosAvanzados();
@@ -379,5 +395,125 @@ public partial class LetMeCookPage : ContentPage
 
         if (salir)
             await Shell.Current.GoToAsync("//home");
+    }
+
+    private static bool TryGetVideoDurationSeconds(byte[] bytes, out double seconds)
+    {
+        seconds = 0;
+        return TryFindMovieHeaderDuration(bytes, 0, bytes.Length, 0, out seconds);
+    }
+
+    private static bool TryFindMovieHeaderDuration(byte[] bytes, long start, long end, int depth, out double seconds)
+    {
+        seconds = 0;
+
+        if (depth > 6)
+            return false;
+
+        long offset = start;
+
+        while (offset + 8 <= end && offset + 8 <= bytes.Length)
+        {
+            ulong atomSize32 = ReadUInt32BigEndian(bytes, offset);
+            string atomType = ReadAscii(bytes, offset + 4, 4);
+            long headerSize = 8;
+            long atomSize = (long)atomSize32;
+
+            if (atomSize32 == 1)
+            {
+                if (offset + 16 > end || offset + 16 > bytes.Length)
+                    return false;
+
+                atomSize = (long)ReadUInt64BigEndian(bytes, offset + 8);
+                headerSize = 16;
+            }
+            else if (atomSize32 == 0)
+            {
+                atomSize = end - offset;
+            }
+
+            if (atomSize < headerSize || offset + atomSize > end || offset + atomSize > bytes.Length)
+                break;
+
+            if (atomType == "mvhd")
+                return TryReadMvhdDuration(bytes, offset + headerSize, atomSize - headerSize, out seconds);
+
+            if (IsContainerAtom(atomType) && TryFindMovieHeaderDuration(bytes, offset + headerSize, offset + atomSize, depth + 1, out seconds))
+                return true;
+
+            offset += atomSize;
+        }
+
+        return false;
+    }
+
+    private static bool TryReadMvhdDuration(byte[] bytes, long payloadOffset, long payloadSize, out double seconds)
+    {
+        seconds = 0;
+
+        if (payloadSize < 20 || payloadOffset + payloadSize > bytes.Length)
+            return false;
+
+        byte version = bytes[(int)payloadOffset];
+
+        if (version == 0)
+        {
+            if (payloadSize < 20)
+                return false;
+
+            uint timescale = ReadUInt32BigEndian(bytes, payloadOffset + 12);
+            uint duration = ReadUInt32BigEndian(bytes, payloadOffset + 16);
+
+            if (timescale == 0)
+                return false;
+
+            seconds = duration / (double)timescale;
+            return seconds >= 0;
+        }
+
+        if (version == 1)
+        {
+            if (payloadSize < 32)
+                return false;
+
+            uint timescale = ReadUInt32BigEndian(bytes, payloadOffset + 20);
+            ulong duration = ReadUInt64BigEndian(bytes, payloadOffset + 24);
+
+            if (timescale == 0)
+                return false;
+
+            seconds = duration / (double)timescale;
+            return seconds >= 0;
+        }
+
+        return false;
+    }
+
+    private static bool IsContainerAtom(string atomType)
+    {
+        return atomType is "moov" or "trak" or "mdia" or "minf" or "stbl" or "edts" or "udta" or "meta";
+    }
+
+    private static uint ReadUInt32BigEndian(byte[] bytes, long offset)
+    {
+        int i = (int)offset;
+        return ((uint)bytes[i] << 24)
+             | ((uint)bytes[i + 1] << 16)
+             | ((uint)bytes[i + 2] << 8)
+             | bytes[i + 3];
+    }
+
+    private static ulong ReadUInt64BigEndian(byte[] bytes, long offset)
+    {
+        return ((ulong)ReadUInt32BigEndian(bytes, offset) << 32)
+             | ReadUInt32BigEndian(bytes, offset + 4);
+    }
+
+    private static string ReadAscii(byte[] bytes, long offset, int length)
+    {
+        if (offset < 0 || offset + length > bytes.Length)
+            return string.Empty;
+
+        return System.Text.Encoding.ASCII.GetString(bytes, (int)offset, length);
     }
 }

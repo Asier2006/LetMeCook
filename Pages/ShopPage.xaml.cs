@@ -175,7 +175,6 @@ public partial class ShopPage : ContentPage, INotifyPropertyChanged
             return;
         }
 
-        // 🔥 SQL desactivado temporalmente
         App.UsuarioActual.Descripcion = bio;
 
         await DisplayAlert("Guardado", "Tu biografía ha sido actualizada (solo local).", "OK");

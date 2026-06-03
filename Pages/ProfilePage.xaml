@@ -50,28 +50,50 @@
                     </VerticalStackLayout>
 
                     <HorizontalStackLayout Grid.Column="1"
-                                           HorizontalOptions="End"
-                                           VerticalOptions="Center"
-                                           Spacing="10">
+                       HorizontalOptions="End"
+                       VerticalOptions="Center"
+                       Spacing="10">
 
-                        <Button x:Name="BtnTienda"
-                                Text="T"
-                                BackgroundColor="#E09A3F"
-                                TextColor="White"
-                                CornerRadius="10"
-                                WidthRequest="40"
-                                HeightRequest="40"
-                                Clicked="AbrirTiendaClicked"/>
+                        <!-- BOTÓN TIENDA (escribir.png) -->
+                        <Border HeightRequest="40"
+            WidthRequest="40"
+            BackgroundColor="#FAC26C"
+            StrokeThickness="0"
+            StrokeShape="Ellipse"
+            HorizontalOptions="Center"
+            VerticalOptions="Center">
 
-                        <Button x:Name="BtnAjustes"
-                                Text="A"
-                                BackgroundColor="#E09A3F"
-                                TextColor="White"
-                                CornerRadius="10"
-                                WidthRequest="40"
-                                HeightRequest="40"
-                                Clicked="AbrirAjustesClicked"/>
+                            <Image Source="escribir.png"
+               Aspect="AspectFit"
+               Margin="8">
+                                <Image.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="AbrirTiendaClicked" />
+                                </Image.GestureRecognizers>
+                            </Image>
+
+                        </Border>
+
+                        <!-- BOTÓN AJUSTES (gear.png) -->
+                        <Border HeightRequest="40"
+            WidthRequest="40"
+            BackgroundColor="#FAC26C"
+            StrokeThickness="0"
+            StrokeShape="Ellipse"
+            HorizontalOptions="Center"
+            VerticalOptions="Center">
+
+                            <Image Source="gear.png"
+               Aspect="AspectFit"
+               Margin="8">
+                                <Image.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="AbrirAjustesClicked" />
+                                </Image.GestureRecognizers>
+                            </Image>
+
+                        </Border>
+
                     </HorizontalStackLayout>
+
 
                 </Grid>
 
@@ -105,42 +127,41 @@
                 <!--   VISTA DE MIS RECETAS    -->
                 <!-- ========================= -->
                 <ContentView x:Name="RecetasView"
-                             IsVisible="True"
-                             Margin="0,0,0,20">
+             IsVisible="True"
+             Margin="0,0,0,20">
 
                     <CollectionView ItemsSource="{Binding MisRecetas}"
-                                    x:Name="ListaMisRecetas"
-                                    Margin="20,20,20,20">
+                    x:Name="ListaMisRecetas"
+                    Margin="10,10,10,10">
 
                         <CollectionView.ItemsLayout>
-                            <LinearItemsLayout Orientation="Vertical" ItemSpacing="15" />
+                            <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
                         </CollectionView.ItemsLayout>
 
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
 
-                                <!-- 🔶 TARJETA IGUAL QUE HOME -->
+                                <!-- 🔶 TARJETA RESPONSIVE IGUAL QUE HOME -->
                                 <Border StrokeThickness="0"
-                                        BackgroundColor="#FAC26C"
-                                        StrokeShape="RoundRectangle 20"
-                                        Padding="15"
-                                        Margin="30,35"
-                                        VerticalOptions="Start">
+                        BackgroundColor="#FAC26C"
+                        StrokeShape="RoundRectangle 20"
+                        Padding="10"
+                        Margin="10,15"
+                        VerticalOptions="Start">
 
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer Tapped="OnRecetaTapped" />
                                     </Border.GestureRecognizers>
 
-                                    <Grid ColumnDefinitions="Auto,*"
-                                          RowDefinitions="Auto,Auto,Auto">
+                                    <Grid RowDefinitions="Auto,Auto,Auto"
+                          ColumnDefinitions="*">
 
-                                        <!-- CABECERA -->
+                                        <!-- 🔶 CABECERA -->
                                         <Border Grid.Row="0"
-                                                Grid.ColumnSpan="2"
-                                                BackgroundColor="#E0A85A"
-                                                StrokeThickness="0"
-                                                StrokeShape="RoundRectangle 15"
-                                                Padding="10">
+                                BackgroundColor="#E0A85A"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 15"
+                                Padding="10">
 
                                             <Grid ColumnDefinitions="Auto,*,Auto">
 
@@ -148,27 +169,24 @@
                                                 <Grid Grid.Column="0">
                                                     <Grid.GestureRecognizers>
                                                         <TapGestureRecognizer 
-                                                            Tapped="OnCreatorClicked"
-                                                            CommandParameter="{Binding UsuarioId}" />
+                                            Tapped="OnCreatorClicked"
+                                            CommandParameter="{Binding UsuarioId}" />
                                                     </Grid.GestureRecognizers>
 
                                                     <HorizontalStackLayout Spacing="10">
-
-                                                        <Frame HeightRequest="70"
-                                                               WidthRequest="70"
-                                                               Padding="0"
-                                                               CornerRadius="100"
-                                                               IsClippedToBounds="True">
-
+                                                        <Frame HeightRequest="55"
+                                               WidthRequest="55"
+                                               Padding="0"
+                                               CornerRadius="100"
+                                               IsClippedToBounds="True">
                                                             <Image Source="{Binding CreadorFotoSource}"
-                                                                   Aspect="AspectFill" />
+                                                   Aspect="AspectFill" />
                                                         </Frame>
 
                                                         <Label Text="{Binding CreadorNombre}"
-                                                               TextColor="White"
-                                                               FontSize="24"
-                                                               FontAttributes="Bold" />
-
+                                               TextColor="White"
+                                               FontSize="20"
+                                               FontAttributes="Bold" />
                                                     </HorizontalStackLayout>
                                                 </Grid>
 
@@ -176,27 +194,26 @@
 
                                                 <!-- LIKE + ESTRELLA -->
                                                 <HorizontalStackLayout Grid.Column="2"
-                                                                       Spacing="20">
+                                                       Spacing="20">
 
                                                     <VerticalStackLayout>
                                                         <Image Source="{Binding IconoLike}"
-                                                               HeightRequest="28"
-                                                               WidthRequest="28">
+                                               HeightRequest="26"
+                                               WidthRequest="26">
                                                             <Image.GestureRecognizers>
                                                                 <TapGestureRecognizer Tapped="LikeClicked" />
                                                             </Image.GestureRecognizers>
                                                         </Image>
-
                                                         <Label Text="{Binding Likes}"
-                                                               FontSize="12"
-                                                               TextColor="White"
-                                                               HorizontalOptions="Center" />
+                                               FontSize="12"
+                                               TextColor="White"
+                                               HorizontalOptions="Center" />
                                                     </VerticalStackLayout>
 
                                                     <VerticalStackLayout>
                                                         <Image Source="{Binding IconoEstrella}"
-                                                               HeightRequest="28"
-                                                               WidthRequest="28">
+                                               HeightRequest="26"
+                                               WidthRequest="26">
                                                             <Image.GestureRecognizers>
                                                                 <TapGestureRecognizer Tapped="PuntuarClicked" />
                                                             </Image.GestureRecognizers>
@@ -208,100 +225,116 @@
                                             </Grid>
                                         </Border>
 
-                                        <!-- SEPARADOR -->
+                                        <!-- 🔶 SEPARADOR -->
                                         <BoxView Grid.Row="1"
-                                                 Grid.ColumnSpan="2"
-                                                 HeightRequest="1"
-                                                 BackgroundColor="White"
-                                                 Margin="0,10" />
+                                 HeightRequest="1"
+                                 BackgroundColor="White"
+                                 Margin="0,10" />
 
-                                        <!-- CONTENIDO -->
-                                        <Grid Grid.Row="2"
-                                              ColumnDefinitions="Auto,*">
+                                        <!-- 🔶 CONTENIDO (TÍTULO + IMAGEN + INFO) -->
+                                        <VerticalStackLayout Grid.Row="2"
+                                             Spacing="10"
+                                             VerticalOptions="Start">
 
-                                            <Frame Grid.Column="0"
-                                                   Padding="0"
-                                                   CornerRadius="8"
-                                                   IsClippedToBounds="True"
-                                                   HeightRequest="290"
-                                                   WidthRequest="170">
+                                            <!-- TÍTULO -->
+                                            <Label Text="{Binding Titulo}"
+                                   FontAttributes="Bold"
+                                   TextColor="White"
+                                   FontSize="22"
+                                   HorizontalOptions="Start"
+                                   LineBreakMode="WordWrap"
+                                   Margin="5,8,0,8" />
 
+                                            <!-- IMAGEN HORIZONTAL -->
+                                            <Frame Padding="0"
+                                   CornerRadius="12"
+                                   IsClippedToBounds="True"
+                                   HeightRequest="180"
+                                   HorizontalOptions="Fill">
                                                 <Image Source="{Binding ImagenSource}"
-                                                       Aspect="AspectFill" />
+                                       Aspect="AspectFill" />
                                             </Frame>
 
-                                            <VerticalStackLayout Grid.Column="1"
-                                                                 Padding="10,0"
-                                                                 Spacing="12">
+                                            <!-- SEPARADOR ENTRE IMAGEN Y INFO -->
+                                            <BoxView HeightRequest="1"
+                                     BackgroundColor="White"
+                                     Margin="0,5" />
 
-                                                <Label Text="{Binding Titulo}"
-                                                       FontAttributes="Bold"
-                                                       TextColor="White"
-                                                       FontSize="24" />
+                                            <!-- INFO -->
+                                            <VerticalStackLayout Spacing="10">
 
-                                                <HorizontalStackLayout Spacing="8">
+                                                <!-- COMENSALES -->
+                                                <HorizontalStackLayout Spacing="6">
                                                     <Image Source="userR.png"
-                                                           HeightRequest="34"
-                                                           WidthRequest="34" />
+                                           HeightRequest="26"
+                                           WidthRequest="26" />
                                                     <Label Text="Comensales:"
-                                                           FontSize="17"
-                                                           TextColor="White"
-                                                           FontAttributes="Bold" />
+                                           FontSize="16"
+                                           TextColor="White"
+                                           FontAttributes="Bold" />
                                                     <Label Text="{Binding Comensales}"
-                                                           TextColor="White"
-                                                           FontSize="17" />
+                                           TextColor="White"
+                                           FontSize="16" />
                                                 </HorizontalStackLayout>
 
-                                                <HorizontalStackLayout Spacing="8">
+                                                <!-- TIEMPO -->
+                                                <HorizontalStackLayout Spacing="6">
                                                     <Image Source="clock.png"
-                                                           HeightRequest="34"
-                                                           WidthRequest="34" />
+                                           HeightRequest="26"
+                                           WidthRequest="26" />
                                                     <Label Text="Tiempo:"
-                                                           FontSize="17"
-                                                           TextColor="White"
-                                                           FontAttributes="Bold" />
+                                           FontSize="16"
+                                           TextColor="White"
+                                           FontAttributes="Bold" />
                                                     <Label Text="{Binding TiempoPreparacion, StringFormat='{0} min'}"
-                                                           TextColor="White"
-                                                           FontSize="17" />
+                                           TextColor="White"
+                                           FontSize="16" />
                                                 </HorizontalStackLayout>
 
-                                                <HorizontalStackLayout Spacing="8">
+                                                <!-- COCINA -->
+                                                <HorizontalStackLayout Spacing="6">
                                                     <Image Source="oven.png"
-                                                           HeightRequest="34"
-                                                           WidthRequest="34" />
+                                           HeightRequest="26"
+                                           WidthRequest="26" />
                                                     <Label Text="{Binding TipoCocinaPrincipal, StringFormat='Cocina: {0}'}"
-                                                           TextColor="White"
-                                                           FontSize="17"
-                                                           FontAttributes="Bold" />
+                                           TextColor="White"
+                                           FontSize="16"
+                                           FontAttributes="Bold"
+                                           LineBreakMode="WordWrap" />
                                                 </HorizontalStackLayout>
 
+                                                <!-- SEPARADOR -->
                                                 <BoxView HeightRequest="1"
-                                                         BackgroundColor="White"
-                                                         Margin="0,10" />
+                                         BackgroundColor="White"
+                                         Margin="0,8" />
 
-                                                <HorizontalStackLayout Spacing="8">
+                                                <!-- ORIGEN -->
+                                                <HorizontalStackLayout Spacing="6">
                                                     <Image Source="world.png"
-                                                           HeightRequest="34"
-                                                           WidthRequest="34" />
+                                           HeightRequest="26"
+                                           WidthRequest="26" />
                                                     <Label Text="{Binding OrigenPrincipal, StringFormat='Origen: {0}'}"
-                                                           TextColor="White"
-                                                           FontSize="17"
-                                                           FontAttributes="Bold" />
+                                           TextColor="White"
+                                           FontSize="16"
+                                           FontAttributes="Bold"
+                                           LineBreakMode="WordWrap" />
                                                 </HorizontalStackLayout>
 
-                                                <HorizontalStackLayout Spacing="8">
+                                                <!-- INGREDIENTE -->
+                                                <HorizontalStackLayout Spacing="6">
                                                     <Image Source="fork.png"
-                                                           HeightRequest="34"
-                                                           WidthRequest="34" />
+                                           HeightRequest="26"
+                                           WidthRequest="26" />
                                                     <Label Text="{Binding IngredientePrincipalSimple, StringFormat='Ingrediente: {0}'}"
-                                                           TextColor="White"
-                                                           FontSize="17"
-                                                           FontAttributes="Bold" />
+                                           TextColor="White"
+                                           FontSize="16"
+                                           FontAttributes="Bold"
+                                           LineBreakMode="WordWrap" />
                                                 </HorizontalStackLayout>
 
                                             </VerticalStackLayout>
 
-                                        </Grid>
+                                        </VerticalStackLayout>
 
                                     </Grid>
                                 </Border>
@@ -311,6 +344,7 @@
 
                     </CollectionView>
                 </ContentView>
+
 
                 <!-- ========================= -->
                 <!--       SOBRE MÍ           -->
@@ -388,18 +422,56 @@
         </BoxView>
 
         <!-- MENÚ LATERAL -->
-        <Grid x:Name="SideMenu"
-              Grid.RowSpan="2"
-              BackgroundColor="White"
-              WidthRequest="280"
-              HorizontalOptions="End"
-              TranslationX="300"
-              Padding="20"
-              IsVisible="False">
+        <Border Stroke="#C87F2F"
+        StrokeThickness="3"
+        StrokeShape="RoundRectangle 15"
+        BackgroundColor="Transparent"
+        HorizontalOptions="End"
+        VerticalOptions="Start"
+        Padding="0">
 
-            <local:SettingsView />
+            <Grid x:Name="SideMenu"
+          BackgroundColor="#FAC26C"
+          WidthRequest="280"
+          Padding="20"
+          IsVisible="False"
+          TranslationX="300">
 
-        </Grid>
+                <VerticalStackLayout Spacing="20"
+                             VerticalOptions="Start"
+                             HorizontalOptions="Fill">
+
+                    <!-- TU SETTINGSVIEW TAL CUAL -->
+                    <local:SettingsView />
+
+                    <!-- BOTÓN BACK ABAJO DEL TODO -->
+                    <Border HeightRequest="45"
+                    WidthRequest="45"
+                    BackgroundColor="#FAC26C"
+                    StrokeThickness="0"
+                    StrokeShape="Ellipse"
+                    HorizontalOptions="End"
+                    VerticalOptions="End"
+                    Margin="0,10,5,0">
+
+                        <Image Source="back.png"
+                       Aspect="AspectFit"
+                       Margin="8">
+                            <Image.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="CerrarMenuTapped" />
+                            </Image.GestureRecognizers>
+                        </Image>
+
+                    </Border>
+
+                </VerticalStackLayout>
+
+            </Grid>
+
+        </Border>
+
+
+
 
     </Grid>
 </ContentPage>

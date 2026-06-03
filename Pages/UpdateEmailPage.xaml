@@ -1,19 +1,45 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Vista comentada: Vista para cambiar correo. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MiniTFG.UpdateEmailPage"
-             Title="UpdateEmailPage">
-    <VerticalStackLayout>
-        <Entry x:Name="EmailEntry"
-               Placeholder="Nuevo email"
-               FontSize="18" />
+             BackgroundColor="#FAC26C"
+             Title="Cambiar email">
 
+    <VerticalStackLayout Padding="30"
+                         Spacing="25"
+                         VerticalOptions="Center">
+
+        <!-- TÍTULO -->
+        <Label Text="Cambiar email"
+               FontSize="26"
+               FontAttributes="Bold"
+               TextColor="White"
+               HorizontalOptions="Center" />
+
+        <!-- ENTRY REDONDEADO -->
+        <Border Stroke="#C87F2F"
+                StrokeThickness="2"
+                BackgroundColor="White"
+                StrokeShape="RoundRectangle 15"
+                Padding="10">
+
+            <Entry x:Name="EmailEntry"
+                   Placeholder="Nuevo email"
+                   FontSize="18"
+                   TextColor="Black"
+                   Keyboard="Email"
+                   PlaceholderColor="#888" />
+        </Border>
+
+        <!-- BOTÓN PRINCIPAL -->
         <Button Text="Actualizar email"
-                BackgroundColor="#9C40F7"
+                BackgroundColor="#C87F2F"
                 TextColor="White"
                 CornerRadius="15"
-                HeightRequest="50"
+                HeightRequest="55"
+                FontAttributes="Bold"
                 Clicked="GuardarEmailClicked" />
+
     </VerticalStackLayout>
+
 </ContentPage>

@@ -6,7 +6,7 @@
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     x:Class="MiniTFG.StarRatingPopup">
 
-    <VerticalStackLayout Padding="20" Spacing="20" BackgroundColor="#9C40F7"
+    <VerticalStackLayout Padding="20" Spacing="20" BackgroundColor="#B57A3F"
                          HorizontalOptions="Center" VerticalOptions="Center">
 
         <Label Text="Valora al usuario" FontSize="20" HorizontalOptions="Center" TextColor="White"/>
@@ -78,7 +78,7 @@
             HeightRequest="42"
             CornerRadius="10"
             FontAttributes="Bold"
-            BackgroundColor="#9C40F7"
+            BackgroundColor="#B57A3F"
             TextColor="White"
             Clicked ="GuardarClicked" />
 

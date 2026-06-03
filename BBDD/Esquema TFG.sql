@@ -11,7 +11,7 @@
 --      archivos locales incluidos en Resources/Images de la app.
 --      Ejemplos: user.png, opbanner.jpg, sanji.jpg.
 --    - Recetas.Imagen guarda la imagen subida por el usuario en Base64.
---    - PasosReceta.Video guarda el vídeo del paso en Base64.
+--    - PasosRecetaVideos guarda varios vídeos por paso en Base64.
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
@@ -207,7 +207,7 @@ CREATE TABLE RecetaIngredientes (
 
 -- ---------------------------------------------------------------------
 -- PasosReceta
--- Cada receta puede tener varios pasos. Video es Base64 opcional.
+-- Cada receta puede tener varios pasos. Video se mantiene como campo legado; los vídeos nuevos van en PasosRecetaVideos.
 -- ---------------------------------------------------------------------
 CREATE TABLE PasosReceta (
     Id          INT         NOT NULL AUTO_INCREMENT,
@@ -224,6 +224,30 @@ CREATE TABLE PasosReceta (
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT chk_pasos_numero
         CHECK (NumeroPaso >= 1)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- PasosRecetaVideos
+-- Varios vídeos por paso. Cada vídeo se limita a 5 segundos.
+-- ---------------------------------------------------------------------
+CREATE TABLE PasosRecetaVideos (
+    Id                 INT            NOT NULL AUTO_INCREMENT,
+    PasoRecetaId       INT            NOT NULL,
+    Orden              INT            NOT NULL DEFAULT 1,
+    Video              LONGTEXT       NOT NULL,
+    VideoNombreArchivo VARCHAR(255)   NULL,
+    VideoContentType   VARCHAR(100)   NULL,
+    DuracionSegundos   DECIMAL(6,2)   NULL,
+
+    PRIMARY KEY (Id),
+    INDEX ix_pasos_receta_videos_paso (PasoRecetaId, Orden),
+    CONSTRAINT fk_pasos_receta_videos_paso
+        FOREIGN KEY (PasoRecetaId) REFERENCES PasosReceta(Id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT chk_pasos_receta_videos_orden
+        CHECK (Orden >= 1),
+    CONSTRAINT chk_pasos_receta_videos_duracion
+        CHECK (DuracionSegundos IS NULL OR DuracionSegundos <= 5.00)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------

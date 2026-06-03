@@ -306,42 +306,218 @@ namespace MiniTFG
             var list = new List<PasoReceta>();
             await using var conn = Connect();
             await conn.OpenAsync();
-            await using var cmd = new MySqlCommand(
-                "SELECT * FROM PasosReceta WHERE RecetaId=@id ORDER BY NumeroPaso", conn);
-            cmd.Parameters.AddWithValue("@id", recetaId);
-            await using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-                list.Add(new PasoReceta
+            await EnsurePasosRecetaVideosTableAsync(conn);
+
+            await using (var cmd = new MySqlCommand(
+                "SELECT Id, RecetaId, NumeroPaso, Descripcion, Video FROM PasosReceta WHERE RecetaId=@id ORDER BY NumeroPaso", conn))
+            {
+                cmd.Parameters.AddWithValue("@id", recetaId);
+                await using var reader = await cmd.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
                 {
-                    Id          = reader.GetInt32("Id"),
-                    RecetaId    = reader.GetInt32("RecetaId"),
-                    NumeroPaso  = reader.GetInt32("NumeroPaso"),
-                    Descripcion = reader.IsDBNull(reader.GetOrdinal("Descripcion")) ? null : reader.GetString("Descripcion"),
-                    Video       = reader.IsDBNull(reader.GetOrdinal("Video"))       ? null : reader.GetString("Video")
+                    var paso = new PasoReceta
+                    {
+                        Id          = reader.GetInt32("Id"),
+                        RecetaId    = reader.GetInt32("RecetaId"),
+                        NumeroPaso  = reader.GetInt32("NumeroPaso"),
+                        Descripcion = reader.IsDBNull(reader.GetOrdinal("Descripcion")) ? null : reader.GetString("Descripcion"),
+                        Video       = reader.IsDBNull(reader.GetOrdinal("Video"))       ? null : reader.GetString("Video")
+                    };
+
+                    list.Add(paso);
+                }
+            }
+
+            if (list.Count == 0)
+                return list;
+
+            var ids = list.Select(p => p.Id).ToArray();
+            var parametros = ids.Select((_, i) => $"@id{i}").ToArray();
+
+            await using (var videoCmd = new MySqlCommand(
+                $@"SELECT Id, PasoRecetaId, Orden, Video, VideoNombreArchivo, VideoContentType, DuracionSegundos
+                   FROM PasosRecetaVideos
+                   WHERE PasoRecetaId IN ({string.Join(",", parametros)})
+                   ORDER BY PasoRecetaId, Orden, Id", conn))
+            {
+                for (int i = 0; i < ids.Length; i++)
+                    videoCmd.Parameters.AddWithValue(parametros[i], ids[i]);
+
+                await using var videoReader = await videoCmd.ExecuteReaderAsync();
+
+                while (await videoReader.ReadAsync())
+                {
+                    int pasoRecetaId = videoReader.GetInt32("PasoRecetaId");
+                    var paso = list.FirstOrDefault(p => p.Id == pasoRecetaId);
+
+                    if (paso == null)
+                        continue;
+
+                    paso.Videos.Add(new PasoRecetaVideo
+                    {
+                        Id                 = videoReader.GetInt32("Id"),
+                        PasoRecetaId       = pasoRecetaId,
+                        Orden              = videoReader.GetInt32("Orden"),
+                        Video              = videoReader.IsDBNull(videoReader.GetOrdinal("Video")) ? null : videoReader.GetString("Video"),
+                        VideoNombreArchivo = videoReader.IsDBNull(videoReader.GetOrdinal("VideoNombreArchivo")) ? null : videoReader.GetString("VideoNombreArchivo"),
+                        VideoContentType   = videoReader.IsDBNull(videoReader.GetOrdinal("VideoContentType")) ? null : videoReader.GetString("VideoContentType"),
+                        DuracionSegundos   = videoReader.IsDBNull(videoReader.GetOrdinal("DuracionSegundos")) ? null : videoReader.GetDecimal("DuracionSegundos")
+                    });
+                }
+            }
+
+            foreach (var paso in list.Where(p => p.Videos.Count == 0 && !string.IsNullOrWhiteSpace(p.Video)))
+            {
+                paso.Videos.Add(new PasoRecetaVideo
+                {
+                    PasoRecetaId = paso.Id,
+                    Orden = 1,
+                    Video = paso.Video,
+                    VideoNombreArchivo = paso.VideoNombreArchivo,
+                    VideoContentType = paso.VideoContentType
                 });
+            }
+
             return list;
         }
 
         public async Task<PasoReceta> PostPasoRecetaAsync(PasoReceta paso)
         {
+            await using var conn = Connect();
+            await conn.OpenAsync();
+            await EnsurePasosRecetaVideosTableAsync(conn);
+
+            await using var tx = await conn.BeginTransactionAsync();
+            var mysqlTx = tx as MySqlTransaction ?? throw new InvalidOperationException("No se pudo iniciar la transacción MySQL.");
+
             try
             {
-                await using var conn = Connect();
-                await conn.OpenAsync();
                 var sql = @"INSERT INTO PasosReceta (RecetaId, NumeroPaso, Descripcion, Video)
-                        VALUES (@RecetaId, @NumeroPaso, @Descripcion, @Video);
-                        SELECT LAST_INSERT_ID();";
-                await using var cmd = new MySqlCommand(sql, conn);
-                cmd.Parameters.AddWithValue("@RecetaId", paso.RecetaId);
-                cmd.Parameters.AddWithValue("@NumeroPaso", paso.NumeroPaso);
-                cmd.Parameters.AddWithValue("@Descripcion", paso.Descripcion ?? (object)DBNull.Value);
-                cmd.Parameters.AddWithValue("@Video", paso.Video ?? (object)DBNull.Value);
-                paso.Id = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                            VALUES (@RecetaId, @NumeroPaso, @Descripcion, NULL);
+                            SELECT LAST_INSERT_ID();";
+
+                await using (var cmd = new MySqlCommand(sql, conn, mysqlTx))
+                {
+                    cmd.Parameters.AddWithValue("@RecetaId", paso.RecetaId);
+                    cmd.Parameters.AddWithValue("@NumeroPaso", paso.NumeroPaso);
+                    cmd.Parameters.AddWithValue("@Descripcion", paso.Descripcion ?? (object)DBNull.Value);
+                    paso.Id = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+                }
+
+                var videos = ObtenerVideosPasoParaGuardar(paso).ToList();
+
+                for (int i = 0; i < videos.Count; i++)
+                {
+                    var video = videos[i];
+                    video.PasoRecetaId = paso.Id;
+                    video.Orden = video.Orden > 0 ? video.Orden : i + 1;
+
+                    await using var videoCmd = new MySqlCommand(
+                        @"INSERT INTO PasosRecetaVideos
+                            (PasoRecetaId, Orden, Video, VideoNombreArchivo, VideoContentType, DuracionSegundos)
+                          VALUES
+                            (@PasoRecetaId, @Orden, @Video, @VideoNombreArchivo, @VideoContentType, @DuracionSegundos);
+                          SELECT LAST_INSERT_ID();", conn, mysqlTx);
+
+                    videoCmd.Parameters.AddWithValue("@PasoRecetaId", video.PasoRecetaId);
+                    videoCmd.Parameters.AddWithValue("@Orden", video.Orden);
+
+                    var videoParam = videoCmd.Parameters.Add("@Video", MySqlDbType.LongText);
+                    videoParam.Value = video.Video ?? (object)DBNull.Value;
+
+                    videoCmd.Parameters.AddWithValue("@VideoNombreArchivo", video.VideoNombreArchivo ?? (object)DBNull.Value);
+                    videoCmd.Parameters.AddWithValue("@VideoContentType", video.VideoContentType ?? (object)DBNull.Value);
+                    videoCmd.Parameters.AddWithValue("@DuracionSegundos", video.DuracionSegundos.HasValue ? video.DuracionSegundos.Value : (object)DBNull.Value);
+
+                    video.Id = Convert.ToInt32(await videoCmd.ExecuteScalarAsync());
+                }
+
+                await tx.CommitAsync();
                 return paso;
             }
             catch
             {
-                return null;
+                await tx.RollbackAsync();
+                throw;
+            }
+        }
+
+        private static IEnumerable<PasoRecetaVideo> ObtenerVideosPasoParaGuardar(PasoReceta paso)
+        {
+            if (paso.Videos.Count > 0)
+            {
+                foreach (var video in paso.Videos.Where(v => !string.IsNullOrWhiteSpace(v.Video)).OrderBy(v => v.Orden))
+                    yield return video;
+
+                yield break;
+            }
+
+            if (!string.IsNullOrWhiteSpace(paso.Video))
+                yield return new PasoRecetaVideo { Orden = 1, Video = paso.Video, VideoNombreArchivo = paso.VideoNombreArchivo, VideoContentType = paso.VideoContentType };
+
+            if (!string.IsNullOrWhiteSpace(paso.Video1))
+                yield return new PasoRecetaVideo { Orden = 1, Video = paso.Video1, VideoNombreArchivo = paso.Video1Nombre, VideoContentType = paso.Video1Tipo };
+            if (!string.IsNullOrWhiteSpace(paso.Video2))
+                yield return new PasoRecetaVideo { Orden = 2, Video = paso.Video2, VideoNombreArchivo = paso.Video2Nombre, VideoContentType = paso.Video2Tipo };
+            if (!string.IsNullOrWhiteSpace(paso.Video3))
+                yield return new PasoRecetaVideo { Orden = 3, Video = paso.Video3, VideoNombreArchivo = paso.Video3Nombre, VideoContentType = paso.Video3Tipo };
+            if (!string.IsNullOrWhiteSpace(paso.Video4))
+                yield return new PasoRecetaVideo { Orden = 4, Video = paso.Video4, VideoNombreArchivo = paso.Video4Nombre, VideoContentType = paso.Video4Tipo };
+            if (!string.IsNullOrWhiteSpace(paso.Video5))
+                yield return new PasoRecetaVideo { Orden = 5, Video = paso.Video5, VideoNombreArchivo = paso.Video5Nombre, VideoContentType = paso.Video5Tipo };
+        }
+
+        private static async Task EnsurePasosRecetaVideosTableAsync(MySqlConnection conn)
+        {
+            await using (var create = new MySqlCommand(
+                @"CREATE TABLE IF NOT EXISTS PasosRecetaVideos (
+                    Id                 INT            NOT NULL AUTO_INCREMENT,
+                    PasoRecetaId       INT            NOT NULL,
+                    Orden              INT            NOT NULL DEFAULT 1,
+                    Video              LONGTEXT       NOT NULL,
+                    VideoNombreArchivo VARCHAR(255)   NULL,
+                    VideoContentType   VARCHAR(100)   NULL,
+                    DuracionSegundos   DECIMAL(6,2)   NULL,
+
+                    PRIMARY KEY (Id),
+                    INDEX ix_pasos_receta_videos_paso (PasoRecetaId, Orden),
+                    CONSTRAINT fk_pasos_receta_videos_paso
+                        FOREIGN KEY (PasoRecetaId) REFERENCES PasosReceta(Id)
+                        ON DELETE CASCADE ON UPDATE CASCADE,
+                    CONSTRAINT chk_pasos_receta_videos_orden
+                        CHECK (Orden >= 1),
+                    CONSTRAINT chk_pasos_receta_videos_duracion
+                        CHECK (DuracionSegundos IS NULL OR DuracionSegundos <= 5.00)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;", conn))
+            {
+                await create.ExecuteNonQueryAsync();
+            }
+
+            await EnsureColumnExistsAsync(conn, "PasosRecetaVideos", "Orden", "INT NOT NULL DEFAULT 1");
+            await EnsureColumnExistsAsync(conn, "PasosRecetaVideos", "VideoNombreArchivo", "VARCHAR(255) NULL");
+            await EnsureColumnExistsAsync(conn, "PasosRecetaVideos", "VideoContentType", "VARCHAR(100) NULL");
+            await EnsureColumnExistsAsync(conn, "PasosRecetaVideos", "DuracionSegundos", "DECIMAL(6,2) NULL");
+        }
+
+        private static async Task EnsureColumnExistsAsync(MySqlConnection conn, string tableName, string columnName, string definition)
+        {
+            await using var exists = new MySqlCommand(
+                @"SELECT COUNT(*)
+                  FROM INFORMATION_SCHEMA.COLUMNS
+                  WHERE TABLE_SCHEMA = DATABASE()
+                    AND TABLE_NAME = @tableName
+                    AND COLUMN_NAME = @columnName", conn);
+
+            exists.Parameters.AddWithValue("@tableName", tableName);
+            exists.Parameters.AddWithValue("@columnName", columnName);
+
+            bool tieneColumna = Convert.ToInt32(await exists.ExecuteScalarAsync()) > 0;
+
+            if (!tieneColumna)
+            {
+                await using var alter = new MySqlCommand($"ALTER TABLE {tableName} ADD COLUMN {columnName} {definition}", conn);
+                await alter.ExecuteNonQueryAsync();
             }
         }
 
@@ -873,12 +1049,10 @@ namespace MiniTFG
                 new Skin { Nombre = "Foto Chicote", Imagen = "chicote.jpg", Precio = 5, Activo = true },
                 new Skin { Nombre = "Foto Heisenberg", Imagen = "heisenberg.jpg", Precio = 8, Activo = true },
                 new Skin { Nombre = "Foto House", Imagen = "house.jpg", Precio = 8, Activo = true },
-                new Skin { Nombre = "Foto Sanji", Imagen = "sanji.jpg", Precio = 10, Activo = true },
                 new Skin { Nombre = "Banner Breaking Bad", Imagen = "brbabanner.jpg", Precio = 10, Activo = true },
                 new Skin { Nombre = "Banner Better Call Saul", Imagen = "bcsbanner.jpg", Precio = 10, Activo = true },
                 new Skin { Nombre = "Banner Dragon Ball", Imagen = "dbbanner.jpg", Precio = 10, Activo = true },
                 new Skin { Nombre = "Banner One Piece", Imagen = "opbanner.jpg", Precio = 10, Activo = true },
-                new Skin { Nombre = "Banner Peaky Blinders", Imagen = "peakybanner.jpg", Precio = 10, Activo = true }
             };
 
             await using var conn = Connect();

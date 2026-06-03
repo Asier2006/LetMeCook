@@ -41,7 +41,7 @@
                        FontSize="18"
                        FontAttributes="Bold" />
 
-                <Label Text="Cada descripción/comentario suma +2 puntos. Cada vídeo suma +3 puntos."
+                <Label Text="Cada descripción/comentario suma +2 puntos. Cada vídeo de hasta 5 segundos suma +3 puntos."
                        TextColor="#CFCFCF"
                        FontSize="14" />
 

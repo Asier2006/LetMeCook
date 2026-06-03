@@ -6,28 +6,28 @@
     <VerticalStackLayout Spacing="12">
 
         <Button Text="Cambiar nombre de usuario"
-                BackgroundColor="#9C40F7"
+                BackgroundColor="#C87F2F"
                 TextColor="White"
                 CornerRadius="15"
                 HeightRequest="50"
                 Clicked="CambiarUsernameClicked" />
 
         <Button Text="Cambiar email"
-                BackgroundColor="#9C40F7"
+                BackgroundColor="#C87F2F"
                 TextColor="White"
                 CornerRadius="15"
                 HeightRequest="50"
                 Clicked="CambiarEmailClicked" />
 
         <Button Text="Cambiar contraseña"
-                BackgroundColor="#9C40F7"
+                BackgroundColor="#C87F2F"
                 TextColor="White"
                 CornerRadius="15"
                 HeightRequest="50"
                 Clicked="CambiarPasswordClicked" />
 
         <Button Text="Cambiar preferencias"
-                BackgroundColor="#9C40F7"
+                BackgroundColor="#C87F2F"
                 TextColor="White"
                 CornerRadius="15"
                 HeightRequest="50"

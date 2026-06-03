@@ -1,8 +1,5 @@
 namespace MiniTFG;
 
-/// <summary>
-/// Carga y guarda las preferencias alimentarias del usuario actual.
-/// </summary>
 public partial class UpdatePreferencesPage : ContentPage
 {
     public List<AlergenosPreferencias> Preferencias { get; set; }

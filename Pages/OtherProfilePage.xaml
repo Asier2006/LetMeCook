@@ -1,73 +1,346 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Vista comentada: Vista pública de perfil de otro usuario. -->
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MiniTFG.OtherProfilePage">
-    <Grid RowDefinitions="Auto, *">
 
-        <!-- BANNER -->
-        <Grid Grid.Row="0">
-            <Image x:Name="BannerImage"
-               Source="opbanner.jpg"
-               Aspect="AspectFill"
-               HeightRequest="180" />
+    <Grid RowDefinitions="*, Auto">
 
-            <!-- FOTO DE PERFIL SUPERPUESTA -->
-            <Frame CornerRadius="60"
-               HeightRequest="120"
-               WidthRequest="120"
-               BackgroundColor="White"
-               Padding="3"
-               VerticalOptions="End"
-               HorizontalOptions="Center"
-               Margin="0,-60,0,0">
-                <Image x:Name="ProfileImage"
-                   Source="user.png"
-                   Aspect="AspectFill" />
-            </Frame>
-        </Grid>
+        <!-- SCROLL PRINCIPAL -->
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="0">
 
-        <!-- CONTENIDO -->
-        <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20" Spacing="20">
-                <Label x:Name="UsernameLabel"
-                   Text="{Binding Nombre}"
-                   FontSize="24"
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center"
-                   Margin="0,0,0,10" />
+                <!-- BANNER -->
+                <Grid HeightRequest="160">
+                    <Image x:Name="BannerImage"
+                           Aspect="AspectFill"
+                           HeightRequest="160" />
+                </Grid>
 
-                <HorizontalStackLayout x:Name="EstrellasContainer" Spacing="4" HorizontalOptions="Center" />
+                <!-- FOTO + NOMBRE + ESTRELLAS -->
+                <Grid ColumnDefinitions="Auto, *"
+                      Margin="20,-40,20,0">
 
-                <Label Text="Recetas"
-                   FontSize="20"
-                   HorizontalOptions="Center" />
+                    <VerticalStackLayout Grid.Column="0" Spacing="5">
 
-                <CollectionView ItemsSource="{Binding MisRecetas}" x:Name="ListaMisRecetas">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Border StrokeThickness="0" BackgroundColor="#9C40F7" StrokeShape="RoundRectangle 15" Padding="10" HeightRequest="250">
-                                <Grid ColumnDefinitions="Auto, *">
-                                    <Image Grid.Column="0"
-                                       Source="{Binding ImagenSource}"
-                                       Aspect="AspectFill"
-                                       HeightRequest="200"
-                                       WidthRequest="200" />
+                        <Border HeightRequest="100"
+                                WidthRequest="100"
+                                Stroke="White"
+                                StrokeThickness="3"
+                                BackgroundColor="Transparent"
+                                StrokeShape="Ellipse">
+                            <Image x:Name="ProfileImage"
+                                   Aspect="AspectFill" />
+                        </Border>
 
-                                    <VerticalStackLayout Grid.Column="1" Padding="10,0" Spacing="4">
-                                        <Label Text="{Binding Titulo}" FontAttributes="Bold" TextColor="White" FontSize="18" />
-                                        <Label Text="{Binding Comensales, StringFormat='Comensales: {0}'}" TextColor="White"/>
-                                        <Label Text="{Binding TiempoPreparacion, StringFormat='Tiempo: {0} min'}" TextColor="White" />
-                                        <Label Text="{Binding TipoCocina, StringFormat='Cocina: {0}'}" TextColor="White" />
-                                        <Label Text="{Binding OrigenDelPlato, StringFormat='Origen: {0}'}" TextColor="White" />
-                                        <Label Text="{Binding IngredientePrincipal, StringFormat='Ingrediente principal: {0}'}" LineBreakMode="WordWrap" TextColor="White" />
-                                    </VerticalStackLayout>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
+                        <Label x:Name="UsernameLabel"
+                               FontSize="26"
+                               FontAttributes="Bold"
+                               TextColor="Black" />
+
+                        <HorizontalStackLayout x:Name="EstrellasContainer"
+                                               Spacing="4" />
+                    </VerticalStackLayout>
+
+                </Grid>
+
+                <!-- BOTONES RECTANGULARES -->
+                <HorizontalStackLayout HorizontalOptions="Center"
+                                       Margin="0,25,0,0">
+
+                    <Button x:Name="BtnRecetasTab"
+                            Text="Recetas"
+                            BackgroundColor="#E09A3F"
+                            TextColor="White"
+                            WidthRequest="150"
+                            HeightRequest="45"
+                            Clicked="RecetasTabClicked"/>
+
+                    <Button x:Name="BtnSobreMi"
+                            Text="Sobre mí"
+                            BackgroundColor="#E09A3F"
+                            TextColor="White"
+                            WidthRequest="150"
+                            HeightRequest="45"
+                            Clicked="SobreMiTabClicked"/>
+                </HorizontalStackLayout>
+
+                <BoxView HeightRequest="6"
+                         BackgroundColor="#E09A3F"
+                         CornerRadius="3"
+                         Margin="20,10,20,10"/>
+
+                <!-- ========================= -->
+                <!--   VISTA DE SUS RECETAS    -->
+                <!-- ========================= -->
+                <ContentView x:Name="RecetasView"
+                             IsVisible="True"
+                             Margin="0,0,0,20">
+
+                    <CollectionView ItemsSource="{Binding MisRecetas}"
+                                    x:Name="ListaMisRecetas"
+                                    Margin="10,10,10,10">
+
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+                        </CollectionView.ItemsLayout>
+
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+
+                                <!-- 🔶 TARJETA RESPONSIVE IGUAL QUE PROFILE -->
+                                <Border StrokeThickness="0"
+                                        BackgroundColor="#FAC26C"
+                                        StrokeShape="RoundRectangle 20"
+                                        Padding="10"
+                                        Margin="10,15"
+                                        VerticalOptions="Start">
+
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnRecetaTapped" />
+                                    </Border.GestureRecognizers>
+
+                                    <Grid RowDefinitions="Auto,Auto,Auto"
+                                          ColumnDefinitions="*">
+
+                                        <!-- 🔶 CABECERA -->
+                                        <Border Grid.Row="0"
+                                                BackgroundColor="#E0A85A"
+                                                StrokeThickness="0"
+                                                StrokeShape="RoundRectangle 15"
+                                                Padding="10">
+
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+
+                                                <!-- FOTO + NOMBRE -->
+                                                <HorizontalStackLayout Grid.Column="0"
+                                                                       Spacing="10">
+                                                    <Frame HeightRequest="55"
+                                                           WidthRequest="55"
+                                                           Padding="0"
+                                                           CornerRadius="100"
+                                                           IsClippedToBounds="True">
+                                                        <Image Source="{Binding CreadorFotoSource}"
+                                                               Aspect="AspectFill" />
+                                                    </Frame>
+
+                                                    <Label Text="{Binding CreadorNombre}"
+                                                           TextColor="White"
+                                                           FontSize="20"
+                                                           FontAttributes="Bold" />
+                                                </HorizontalStackLayout>
+
+                                                <BoxView Grid.Column="1" BackgroundColor="Transparent" />
+
+                                                <!-- LIKE + ESTRELLA -->
+                                                <HorizontalStackLayout Grid.Column="2"
+                                                                       Spacing="20">
+
+                                                    <VerticalStackLayout>
+                                                        <Image Source="{Binding IconoLike}"
+                                                               HeightRequest="26"
+                                                               WidthRequest="26">
+                                                            <Image.GestureRecognizers>
+                                                                <TapGestureRecognizer Tapped="LikeClicked" />
+                                                            </Image.GestureRecognizers>
+                                                        </Image>
+                                                        <Label Text="{Binding Likes}"
+                                                               FontSize="12"
+                                                               TextColor="White"
+                                                               HorizontalOptions="Center" />
+                                                    </VerticalStackLayout>
+
+                                                    <VerticalStackLayout>
+                                                        <Image Source="{Binding IconoEstrella}"
+                                                               HeightRequest="26"
+                                                               WidthRequest="26">
+                                                            <Image.GestureRecognizers>
+                                                                <TapGestureRecognizer Tapped="PuntuarClicked" />
+                                                            </Image.GestureRecognizers>
+                                                        </Image>
+                                                    </VerticalStackLayout>
+
+                                                </HorizontalStackLayout>
+
+                                            </Grid>
+                                        </Border>
+
+                                        <!-- 🔶 SEPARADOR -->
+                                        <BoxView Grid.Row="1"
+                                                 HeightRequest="1"
+                                                 BackgroundColor="White"
+                                                 Margin="0,10" />
+
+                                        <!-- 🔶 CONTENIDO -->
+                                        <VerticalStackLayout Grid.Row="2"
+                                                             Spacing="10"
+                                                             VerticalOptions="Start">
+
+                                            <!-- TÍTULO -->
+                                            <Label Text="{Binding Titulo}"
+                                                   FontAttributes="Bold"
+                                                   TextColor="White"
+                                                   FontSize="22"
+                                                   HorizontalOptions="Start"
+                                                   LineBreakMode="WordWrap"
+                                                   Margin="5,8,0,8" />
+
+                                            <!-- IMAGEN HORIZONTAL -->
+                                            <Frame Padding="0"
+                                                   CornerRadius="12"
+                                                   IsClippedToBounds="True"
+                                                   HeightRequest="180"
+                                                   HorizontalOptions="Fill">
+                                                <Image Source="{Binding ImagenSource}"
+                                                       Aspect="AspectFill" />
+                                            </Frame>
+
+                                            <!-- SEPARADOR -->
+                                            <BoxView HeightRequest="1"
+                                                     BackgroundColor="White"
+                                                     Margin="0,5" />
+
+                                            <!-- INFO -->
+                                            <VerticalStackLayout Spacing="10">
+
+                                                <HorizontalStackLayout Spacing="6">
+                                                    <Image Source="userR.png"
+                                                           HeightRequest="26"
+                                                           WidthRequest="26" />
+                                                    <Label Text="Comensales:"
+                                                           FontSize="16"
+                                                           TextColor="White"
+                                                           FontAttributes="Bold" />
+                                                    <Label Text="{Binding Comensales}"
+                                                           TextColor="White"
+                                                           FontSize="16" />
+                                                </HorizontalStackLayout>
+
+                                                <HorizontalStackLayout Spacing="6">
+                                                    <Image Source="clock.png"
+                                                           HeightRequest="26"
+                                                           WidthRequest="26" />
+                                                    <Label Text="Tiempo:"
+                                                           FontSize="16"
+                                                           TextColor="White"
+                                                           FontAttributes="Bold" />
+                                                    <Label Text="{Binding TiempoPreparacion, StringFormat='{0} min'}"
+                                                           TextColor="White"
+                                                           FontSize="16" />
+                                                </HorizontalStackLayout>
+
+                                                <HorizontalStackLayout Spacing="6">
+                                                    <Image Source="oven.png"
+                                                           HeightRequest="26"
+                                                           WidthRequest="26" />
+                                                    <Label Text="{Binding TipoCocinaPrincipal, StringFormat='Cocina: {0}'}"
+                                                           TextColor="White"
+                                                           FontSize="16"
+                                                           FontAttributes="Bold"
+                                                           LineBreakMode="WordWrap" />
+                                                </HorizontalStackLayout>
+
+                                                <BoxView HeightRequest="1"
+                                                         BackgroundColor="White"
+                                                         Margin="0,8" />
+
+                                                <HorizontalStackLayout Spacing="6">
+                                                    <Image Source="world.png"
+                                                           HeightRequest="26"
+                                                           WidthRequest="26" />
+                                                    <Label Text="{Binding OrigenPrincipal, StringFormat='Origen: {0}'}"
+                                                           TextColor="White"
+                                                           FontSize="16"
+                                                           FontAttributes="Bold"
+                                                           LineBreakMode="WordWrap" />
+                                                </HorizontalStackLayout>
+
+                                                <HorizontalStackLayout Spacing="6">
+                                                    <Image Source="fork.png"
+                                                           HeightRequest="26"
+                                                           WidthRequest="26" />
+                                                    <Label Text="{Binding IngredientePrincipalSimple, StringFormat='Ingrediente: {0}'}"
+                                                           TextColor="White"
+                                                           FontSize="16"
+                                                           FontAttributes="Bold"
+                                                           LineBreakMode="WordWrap" />
+                                                </HorizontalStackLayout>
+
+                                            </VerticalStackLayout>
+
+                                        </VerticalStackLayout>
+
+                                    </Grid>
+                                </Border>
+
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+
+                    </CollectionView>
+                </ContentView>
+
+                <!-- ========================= -->
+                <!--       SOBRE MÍ           -->
+                <!-- ========================= -->
+                <ContentView x:Name="SobreMiView"
+                             IsVisible="False"
+                             Margin="20,10,20,20">
+
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Sobre mí"
+                               FontSize="22"
+                               FontAttributes="Bold"
+                               TextColor="Black" />
+
+                        <Label x:Name="SobreMiDescripcionLabel"
+                               FontSize="16"
+                               TextColor="Gray" />
+                    </VerticalStackLayout>
+
+                </ContentView>
+
             </VerticalStackLayout>
         </ScrollView>
+
+        <!-- BARRA INFERIOR -->
+        <Grid x:Name="BottomBar"
+              Grid.Row="1"
+              BackgroundColor="#FAC26C"
+              HeightRequest="70"
+              Padding="0"
+              ColumnDefinitions="*,*,*"
+              VerticalOptions="End">
+
+            <Button x:Name="BtnInicio"
+                    Grid.Column="0"
+                    ImageSource="lmchouse.png"
+                    BackgroundColor="#FAC26C"
+                    CornerRadius="35"
+                    Padding="10"
+                    WidthRequest="60"
+                    HeightRequest="60"
+                    Clicked="InicioClicked" />
+
+            <Button x:Name="BtnRecetas"
+                    Grid.Column="1"
+                    ImageSource="lmcrecipe.png"
+                    BackgroundColor="#FAC26C"
+                    CornerRadius="35"
+                    Padding="10"
+                    WidthRequest="60"
+                    HeightRequest="60"
+                    Clicked="RecetasClicked" />
+
+            <Button x:Name="BtnPerfil"
+                    Grid.Column="2"
+                    ImageSource="lmcprofile.png"
+                    BackgroundColor="#FAC26C"
+                    CornerRadius="35"
+                    Padding="10"
+                    WidthRequest="60"
+                    HeightRequest="60"
+                    Clicked="PerfilClicked" />
+
+        </Grid>
+
     </Grid>
 </ContentPage>

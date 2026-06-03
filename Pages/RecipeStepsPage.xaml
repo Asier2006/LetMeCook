@@ -7,28 +7,37 @@
 
     <Grid RowDefinitions="Auto,*,Auto">
 
-        <!-- TÍTULO DE LA RECETA -->
+        <!-- 🔶 NOMBRE DE LA RECETA -->
         <Label x:Name="TituloLabel"
                Grid.Row="0"
-               FontSize="26"
+               FontSize="32"
                FontAttributes="Bold"
                TextColor="#FAC26C"
                HorizontalOptions="Center"
-               Margin="0,20" />
+               HorizontalTextAlignment="Center"
+               Margin="20,20,20,10" />
 
-        <!-- CARRUSEL DE PASOS -->
-        <CarouselView x:Name="PasosCarousel"
-                      Grid.Row="1"
-                      Loop="False"
-                      PeekAreaInsets="0"
-                      IndicatorView="indicatorView" />
+        <!-- 🔶 CONTENEDOR DE PASOS -->
+        <ScrollView Grid.Row="1"
+                    VerticalScrollBarVisibility="Always">
+            <VerticalStackLayout x:Name="PasosContainer"
+                                 Padding="20"
+                                 Spacing="25" />
+        </ScrollView>
 
-        <!-- INDICADORES -->
-        <IndicatorView x:Name="indicatorView"
-                       Grid.Row="2"
-                       HorizontalOptions="Center"
-                       IndicatorColor="Gray"
-                       SelectedIndicatorColor="#FAC26C"
-                       Margin="0,5,0,15" />
+        <!-- 🔶 BOTÓN FINAL -->
+        <Grid Grid.Row="2"
+              BackgroundColor="#FAC26C"
+              Padding="10"
+              HeightRequest="70">
+            <Button Text="Completado"
+                    BackgroundColor="#E09A3F"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    CornerRadius="10"
+                    FontSize="18"
+                    Clicked="OnCompletadoClicked" />
+        </Grid>
     </Grid>
 </ContentPage>
+

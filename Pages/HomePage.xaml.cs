@@ -2,6 +2,7 @@ using CommunityToolkit.Maui.Views;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MiniTFG;
 
@@ -30,6 +31,9 @@ public partial class HomePage : ContentPage
     private bool _filtrosPreferenciasActivos = true;
     private bool _estaCargandoRecetas = false;
 
+    // 🔍 Búsqueda global
+    private string _busquedaGlobal = string.Empty;
+
     public HomePage()
     {
         InitializeComponent();
@@ -39,6 +43,9 @@ public partial class HomePage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+
+        EntryBusquedaGlobal.Unfocus(); // evita que se abra solo
+
         await CargarCatalogosAsync();
         await CargarRecetasAsync();
     }
@@ -55,20 +62,17 @@ public partial class HomePage : ContentPage
         }
         catch
         {
-            // La app puede seguir funcionando filtrando por texto aunque la BBDD no tenga todavía las tablas nuevas.
-            _catalogoOrigenes = new List<string>();
-            _catalogoTiposCocina = new List<string>();
-            _catalogoIngredientes = new List<string>();
+            _catalogoOrigenes = new();
+            _catalogoTiposCocina = new();
+            _catalogoIngredientes = new();
         }
     }
 
-    // Acceder al perfil del usuario
     private async void OnCreatorClicked(object sender, TappedEventArgs e)
     {
         if (e.Parameter is int creadorId)
             await Shell.Current.GoToAsync($"other?usuarioId={creadorId}");
     }
-
 
     private List<Receta> FiltrarPorPreferencias(List<Receta> recetas, Usuario usuario)
     {
@@ -95,14 +99,22 @@ public partial class HomePage : ContentPage
         return filtradas.ToList();
     }
 
-    private void OnToggleFiltros(object sender, EventArgs e)
+    // abre panel al enfocar el Entry
+    private void OnToggleFiltros(object sender, FocusEventArgs e)
     {
-        PanelFiltros.IsVisible = !PanelFiltros.IsVisible;
+        PanelFiltros.IsVisible = true;
+    }
+
+    private void OnCerrarFiltrosClicked(object sender, EventArgs e)
+    {
+        PanelFiltros.IsVisible = false;
+        EntryBusquedaGlobal.Unfocus();
     }
 
     private void OnFiltroEntryCompleted(object sender, EventArgs e)
     {
-        ActualizarTags();
+        AplicarTextoComoEtiquetaSiProcede();
+        Buscar();
     }
 
     private void OnOrigenTextChanged(object sender, TextChangedEventArgs e)
@@ -120,6 +132,13 @@ public partial class HomePage : ContentPage
         ActualizarSugerencias(_catalogoIngredientes, e.NewTextValue, IngredienteSugerencias);
     }
 
+    // 🔍 BÚSQUEDA GLOBAL
+    private void OnBusquedaGlobalChanged(object sender, TextChangedEventArgs e)
+    {
+        _busquedaGlobal = e.NewTextValue ?? string.Empty;
+        Buscar();
+    }
+
     private void OnOrigenSugerenciaTapped(object sender, EventArgs e)
     {
         var etiqueta = ObtenerTextoEtiqueta(sender);
@@ -127,7 +146,7 @@ public partial class HomePage : ContentPage
         EntryOrigen.Text = string.Empty;
         OrigenSugerencias.Clear();
         ActualizarTags();
-        OnBuscarClicked(null, null);
+        Buscar();
     }
 
     private void OnTipoCocinaSugerenciaTapped(object sender, EventArgs e)
@@ -137,7 +156,7 @@ public partial class HomePage : ContentPage
         EntryTipoCocina.Text = string.Empty;
         TipoCocinaSugerencias.Clear();
         ActualizarTags();
-        OnBuscarClicked(null, null);
+        Buscar();
     }
 
     private void OnIngredienteSugerenciaTapped(object sender, EventArgs e)
@@ -147,7 +166,7 @@ public partial class HomePage : ContentPage
         EntryIngrediente.Text = string.Empty;
         IngredienteSugerencias.Clear();
         ActualizarTags();
-        OnBuscarClicked(null, null);
+        Buscar();
     }
 
     private static string ObtenerTextoEtiqueta(object sender)
@@ -196,6 +215,8 @@ public partial class HomePage : ContentPage
         SeleccionarPrimeraCoincidenciaSiExiste(EntryOrigen.Text, _catalogoOrigenes, _origenesSeleccionados);
         SeleccionarPrimeraCoincidenciaSiExiste(EntryTipoCocina.Text, _catalogoTiposCocina, _tiposCocinaSeleccionados);
         SeleccionarPrimeraCoincidenciaSiExiste(EntryIngrediente.Text, _catalogoIngredientes, _ingredientesSeleccionados);
+
+        ActualizarTags();
     }
 
     private void ActualizarTags()
@@ -236,14 +257,15 @@ public partial class HomePage : ContentPage
         {
             StrokeThickness = 0,
             StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
-            BackgroundColor = Color.FromArgb("#6A0DAD"),
+            BackgroundColor = Color.FromArgb("#FAC26C"),
             Padding = new Thickness(10, 5),
             Margin = new Thickness(2),
             Content = new Label
             {
                 Text = $"{texto} ✕",
                 TextColor = Colors.White,
-                FontSize = 12
+                FontSize = 12,
+                FontAttributes = FontAttributes.Bold
             }
         };
 
@@ -252,8 +274,7 @@ public partial class HomePage : ContentPage
             Command = new Command(() =>
             {
                 quitar?.Invoke();
-                ActualizarTags();
-                OnBuscarClicked(null, null);
+                Buscar();
             })
         });
 
@@ -263,9 +284,16 @@ public partial class HomePage : ContentPage
     private void QuitarEtiqueta(HashSet<string> origen, string etiqueta)
     {
         origen.Remove(etiqueta);
+        ActualizarTags();
+        Buscar();
     }
 
     private void OnBuscarClicked(object sender, EventArgs e)
+    {
+        Buscar();
+    }
+
+    private void Buscar()
     {
         AplicarTextoComoEtiquetaSiProcede();
 
@@ -279,7 +307,20 @@ public partial class HomePage : ContentPage
             resultado = resultado.Where(r => r.Comensales == comensales);
 
         if (!string.IsNullOrWhiteSpace(EntryTiempo.Text))
-            resultado = resultado.Where(r => ContieneNormalizado(r.TiempoPreparacion, EntryTiempo.Text));
+        {
+            var tiempoBusqueda = EntryTiempo.Text.Trim();
+
+            if (TryObtenerMinutos(tiempoBusqueda, out int minutosMaximos))
+            {
+                resultado = resultado.Where(r =>
+                    TryObtenerMinutos(r.TiempoPreparacion, out int minutosReceta)
+                    && minutosReceta <= minutosMaximos);
+            }
+            else
+            {
+                resultado = resultado.Where(r => ContieneNormalizado(r.TiempoPreparacion, tiempoBusqueda));
+            }
+        }
 
         if (_origenesSeleccionados.Count > 0)
             resultado = resultado.Where(r => _origenesSeleccionados.Any(tag => ContieneNormalizado(r.OrigenDelPlato, tag)));
@@ -295,6 +336,18 @@ public partial class HomePage : ContentPage
             resultado = resultado.Where(r => _ingredientesSeleccionados.Any(tag => ContieneNormalizado(r.IngredientePrincipal, tag)));
         else if (!string.IsNullOrWhiteSpace(EntryIngrediente.Text))
             resultado = resultado.Where(r => ContieneNormalizado(r.IngredientePrincipal, EntryIngrediente.Text));
+
+        // 🔍 BÚSQUEDA GLOBAL
+        if (!string.IsNullOrWhiteSpace(_busquedaGlobal))
+        {
+            var texto = _busquedaGlobal;
+
+            resultado = resultado.Where(r =>
+                ContieneNormalizado(r.Titulo, texto) ||
+                ContieneNormalizado(r.OrigenDelPlato, texto) ||
+                ContieneNormalizado(r.TipoCocina, texto) ||
+                ContieneNormalizado(r.IngredientePrincipal, texto));
+        }
 
         Recetas.Clear();
         foreach (var r in resultado)
@@ -313,7 +366,7 @@ public partial class HomePage : ContentPage
             ? Color.FromArgb("#444")
             : Color.FromArgb("#6A0DAD");
 
-        OnBuscarClicked(null, null);
+        Buscar();
     }
 
     private async Task CargarRecetasAsync()
@@ -354,8 +407,8 @@ public partial class HomePage : ContentPage
                 }
                 catch
                 {
-                    _likesUsuario = new HashSet<int>();
-                    _usuariosValorados = new HashSet<int>();
+                    _likesUsuario = new();
+                    _usuariosValorados = new();
                 }
             }
 
@@ -386,7 +439,7 @@ public partial class HomePage : ContentPage
                 ? FiltrarPorPreferencias(TodasLasRecetas, App.UsuarioActual)
                 : TodasLasRecetas.ToList();
 
-            OnBuscarClicked(null, null);
+            Buscar();
         }
         catch (Exception ex)
         {
@@ -477,7 +530,9 @@ public partial class HomePage : ContentPage
             var likesFromServer = await api.GetLikesUsuarioAsync(usuarioId);
             _likesUsuario = new HashSet<int>(likesFromServer.Select(l => l.RecetaId));
         }
-        catch { }
+        catch
+        {
+        }
     }
 
     private async void OnRecetaTapped(object sender, EventArgs e)
@@ -492,31 +547,19 @@ public partial class HomePage : ContentPage
             await Shell.Current.GoToAsync($"recipesteps?recetaId={ids[0]}&usuarioId={ids[1]}");
     }
 
-
-    // Parte en la que se clicka y se va cambiando de pestañas
-
     private async Task PulsarBoton(Button boton)
     {
-        var normal = Color.FromArgb("#FAC26C");   // Naranja claro
-        var oscuro = Color.FromArgb("#E0A85A");   // Naranja oscuro
+        var normal = Color.FromArgb("#FAC26C");
+        var oscuro = Color.FromArgb("#E0A85A");
 
-        // Cambiar a oscuro (efecto de pulsación)
         boton.BackgroundColor = oscuro;
-
-        // Esperar un instante
         await Task.Delay(120);
-
-        // Volver al color normal
         boton.BackgroundColor = normal;
     }
-
-
-
 
     private async void InicioClicked(object sender, EventArgs e)
     {
         await PulsarBoton(BtnInicio);
-
         await CargarRecetasAsync();
         await Shell.Current.GoToAsync("//home");
     }
@@ -530,14 +573,14 @@ public partial class HomePage : ContentPage
     private async void PerfilClicked(object sender, EventArgs e)
     {
         await PulsarBoton(BtnPerfil);
+
         if (App.UsuarioActual == null)
         {
             bool irLogin = await DisplayAlertAsync(
                 "Inicia sesión",
                 "Para acceder a tu perfil necesitas iniciar sesión.",
                 "Iniciar sesión",
-                "Cancelar"
-            );
+                "Cancelar");
 
             if (irLogin)
                 await Shell.Current.GoToAsync("//login");
@@ -548,15 +591,70 @@ public partial class HomePage : ContentPage
         await Shell.Current.GoToAsync("//profile");
     }
 
-
-    // Parte de efecto visual de los botones anteriores
-
     private static bool ContieneNormalizado(string origen, string busqueda)
     {
         if (string.IsNullOrWhiteSpace(origen) || string.IsNullOrWhiteSpace(busqueda))
             return false;
 
         return Normalizar(origen).Contains(Normalizar(busqueda), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryObtenerMinutos(string texto, out int minutos)
+    {
+        minutos = 0;
+
+        if (string.IsNullOrWhiteSpace(texto))
+            return false;
+
+        var normalizado = Normalizar(texto)
+            .Replace("horas", "h", StringComparison.OrdinalIgnoreCase)
+            .Replace("hora", "h", StringComparison.OrdinalIgnoreCase)
+            .Replace("hrs", "h", StringComparison.OrdinalIgnoreCase)
+            .Replace("hr", "h", StringComparison.OrdinalIgnoreCase)
+            .Replace("minutos", "min", StringComparison.OrdinalIgnoreCase)
+            .Replace("minuto", "min", StringComparison.OrdinalIgnoreCase)
+            .Replace("mins", "min", StringComparison.OrdinalIgnoreCase);
+
+        var formatoHorasMinutos = Regex.Match(normalizado, @"(?<!\d)(?<horas>\d{1,2})\s*:\s*(?<minutos>\d{1,2})(?!\d)");
+        if (formatoHorasMinutos.Success
+            && int.TryParse(formatoHorasMinutos.Groups["horas"].Value, out int h)
+            && int.TryParse(formatoHorasMinutos.Groups["minutos"].Value, out int m))
+        {
+            minutos = (h * 60) + m;
+            return minutos >= 0;
+        }
+
+        var total = 0;
+        var tieneUnidades = false;
+
+        foreach (Match match in Regex.Matches(normalizado, @"(?<valor>\d+(?:[\.,]\d+)?)\s*(?<unidad>h|min|m)"))
+        {
+            if (!double.TryParse(match.Groups["valor"].Value.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out double valor))
+                continue;
+
+            var unidad = match.Groups["unidad"].Value;
+            total += unidad == "h"
+                ? (int)Math.Round(valor * 60, MidpointRounding.AwayFromZero)
+                : (int)Math.Round(valor, MidpointRounding.AwayFromZero);
+
+            tieneUnidades = true;
+        }
+
+        if (tieneUnidades)
+        {
+            minutos = total;
+            return minutos >= 0;
+        }
+
+        var numeroSuelto = Regex.Match(normalizado, @"(?<!\d)(?<valor>\d+(?:[\.,]\d+)?)(?!\d)");
+        if (numeroSuelto.Success
+            && double.TryParse(numeroSuelto.Groups["valor"].Value.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out double minutosNumericos))
+        {
+            minutos = (int)Math.Round(minutosNumericos, MidpointRounding.AwayFromZero);
+            return minutos >= 0;
+        }
+
+        return false;
     }
 
     private static string Normalizar(string texto)

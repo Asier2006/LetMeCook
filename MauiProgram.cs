@@ -1,9 +1,7 @@
 ﻿// Configura MAUI, CommunityToolkit y las fuentes de la aplicación.
 
-
 using Microsoft.Extensions.Logging;
 using CommunityToolkit.Maui;
-
 
 namespace MiniTFG
 {
@@ -12,9 +10,11 @@ namespace MiniTFG
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
+
             builder
                 .UseMauiApp<App>()
                 .UseMauiCommunityToolkit()
+                
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("Roboto.ttf", "Roboto");
@@ -23,7 +23,7 @@ namespace MiniTFG
                 });
 
 #if DEBUG
-    		builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #endif
 
             return builder.Build();
